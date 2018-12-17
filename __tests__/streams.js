@@ -13,6 +13,12 @@ const extractValue = async (stream) => {
   return result.current
 }
 
+const extractNext = async (stream) => {
+  const result = await stream
+
+  return result.next
+}
+
 it('should open streams', async () => {
   expect.assertions(3)
 
@@ -90,7 +96,7 @@ it('should open, push, pull & close streams', async () => {
 })
 
 it('should replay the pull for the same stream point', async () => {
-  expect.assertions(6)
+  expect.assertions(8)
 
   const stream = await open()
 
@@ -99,12 +105,14 @@ it('should replay the pull for the same stream point', async () => {
   expect(extractValue(stream)).resolves.toBe(99)
   expect(extractValue(stream)).resolves.toBe(99)
   expect(extractValue(stream)).resolves.toBe(99)
+  expect(await extractNext(stream)).toBe(await extractNext(stream))
 
   await push(nextStream, 18)
 
   expect(extractValue(nextStream)).resolves.toBe(18)
   expect(extractValue(nextStream)).resolves.toBe(18)
   expect(extractValue(nextStream)).resolves.toBe(18)
+  expect(await extractNext(nextStream)).toBe(await extractNext(nextStream))
 })
 
 it('should be able to discard stream points', async () => {
