@@ -1,0 +1,3 @@
+# sporadic
+
+Composable Concurrency Abstractions.
