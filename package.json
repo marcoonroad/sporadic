@@ -1,0 +1,29 @@
+{
+  "name": "sporadic",
+  "version": "0.0.1",
+  "description": "Composable Concurrency Abstractions.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "NODE_PATH=src jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcoonroad/sporadic.git"
+  },
+  "keywords": [
+    "concurrency",
+    "async-await",
+    "streams",
+    "promises",
+    "reactive-programming"
+  ],
+  "author": "Marco Aurélio da Silva <marcoonroad@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marcoonroad/sporadic/issues"
+  },
+  "homepage": "https://github.com/marcoonroad/sporadic#readme",
+  "devDependencies": {
+    "jest": "^23.6.0"
+  }
+}
