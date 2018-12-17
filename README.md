@@ -1,6 +1,6 @@
 # sporadic
 
-Composable Concurrency Abstractions.
+Composable Concurrency Abstractions for Node.JS.
 
 ## Installation
 

@@ -1,7 +1,7 @@
 {
   "name": "sporadic",
   "version": "0.0.1",
-  "description": "Composable Concurrency Abstractions.",
+  "description": "Composable Concurrency Abstractions for Node.JS.",
   "main": "src/sporadic/index.js",
   "scripts": {
     "lint": "standard",
