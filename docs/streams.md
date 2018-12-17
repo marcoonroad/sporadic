@@ -85,14 +85,13 @@ To consume / read a value:
 
 ```javascript
 // may throw reason
-const {
-  current, next
-} = await sporadicStreams.pull(stream)
+const { current, next } = await sporadicStreams.pull(stream)
 ```
 
 Where `next` is the next stream point to read future pushed values, and
 `current` is the current pushed value at this stream point. This operation may
-fail due a sent close signal.
+fail due a sent close signal. The same stream point here would yield the same
+current value and the same next stream point.
 
 ---
 
