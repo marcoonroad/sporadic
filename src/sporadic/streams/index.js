@@ -1,21 +1,23 @@
+/* eslint-env node, es6 */
+
 const defer = () => {
-  const self = {};
+  const self = {}
 
   self.promise = new Promise((resolve, reject) => {
-    self.resolve = resolve;
-    self.reject = reject;
-  });
+    self.resolve = resolve
+    self.reject = reject
+  })
 
-  return self;
-};
+  return self
+}
 
-let create = null;
+let create = null
 
 create = () => {
-  const { promise, resolve, reject } = defer();
+  const { promise, resolve, reject } = defer()
 
-  const produced = false;
-  const next = promise.then(create);
+  const produced = false
+  const next = promise.then(create)
 
   const stream = {
     current: promise,
@@ -23,60 +25,62 @@ create = () => {
     resolve,
     reject,
     produced
-  };
+  }
 
-  return stream;
-};
+  return stream
+}
 
 // unit -> stream promise
-const open = async () => create();
+const open = async () => create()
 
 // stream -> (value * stream) promise
 // may throws reason
 const pull = async stream => {
-  const current = await stream.current;
-  const next = await stream.next;
+  const current = await stream.current
+  const next = await stream.next
 
   return {
     current,
     next
-  };
-};
+  }
+}
 
 const available = async stream => {
-  let point = stream;
+  let point = stream
 
   while (point.produced) {
-    const { next } = await pull(point);
+    const { next } = await pull(point)
 
-    point = next;
+    point = next
   }
 
-  return point;
-};
+  return point
+}
 
 // stream * value -> stream promise
 const push = async (stream, value) => {
-  const point = await available(stream);
+  const point = await available(stream)
 
-  point.resolve(value);
-  point.produced = true;
+  point.resolve(value)
+  point.produced = true
 
-  return await point.next;
-};
+  const result = await point.next
+
+  return result
+}
 
 // stream * reason -> void promise
 // never returns, throws reason
 const close = async (stream, reason) => {
-  const point = await available(stream);
+  const point = await available(stream)
 
-  point.reject(reason);
-  point.produced = true;
+  point.reject(reason)
+  point.produced = true
 
-  throw reason;
-};
+  throw reason
+}
 
-module.exports.open = open;
-module.exports.push = push;
-module.exports.pull = pull;
-module.exports.close = close;
+module.exports.open = open
+module.exports.push = push
+module.exports.pull = pull
+module.exports.close = close
