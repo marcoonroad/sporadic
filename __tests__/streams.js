@@ -2,6 +2,17 @@
 
 const { open, push, pull, close } = require('sporadic').streams
 
+// hack / workaround to drop unhandled promise rejection warning
+const ignorePromises = (promises) => {
+  return Promise.all(promises).catch(() => { })
+}
+
+const extractValue = async (stream) => {
+  const result = await stream
+
+  return result.current
+}
+
 it('should open streams', async () => {
   expect.assertions(3)
 
@@ -56,7 +67,7 @@ it('should open, push & pull streams', async () => {
 })
 
 it('should open, push, pull & close streams', async () => {
-  expect.assertions(3)
+  expect.assertions(4)
 
   const producer0 = await open()
   const consumer0 = producer0
@@ -67,12 +78,51 @@ it('should open, push, pull & close streams', async () => {
 
   const promise2 = close(producer1, 'NOT OK!')
   const promise3 = pull(result1.next)
+  const promise4 = push(producer1, 'IGNORED VALUE.')
 
   expect(result1.current).toBe('OK!')
 
   await expect(promise2).rejects.toBe('NOT OK!')
   await expect(promise3).rejects.toBe('NOT OK!')
+  await expect(promise4).rejects.toBe('NOT OK!')
 
-  // hack / workaround to drop unhandled promise rejection warning
-  Promise.all([ promise2, promise3 ]).catch(() => { })
+  ignorePromises([ promise2, promise3, promise4 ])
+})
+
+it('should replay the pull for the same stream point', async () => {
+  expect.assertions(6)
+
+  const stream = await open()
+
+  const nextStream = await push(stream, 99)
+
+  expect(extractValue(stream)).resolves.toBe(99)
+  expect(extractValue(stream)).resolves.toBe(99)
+  expect(extractValue(stream)).resolves.toBe(99)
+
+  await push(nextStream, 18)
+
+  expect(extractValue(nextStream)).resolves.toBe(18)
+  expect(extractValue(nextStream)).resolves.toBe(18)
+  expect(extractValue(nextStream)).resolves.toBe(18)
+})
+
+it('should be able to discard stream points', async () => {
+  expect.assertions(3)
+
+  const stream = await open()
+
+  let producerPoint = stream
+  for (let step = 0; step < 5; step += 1) {
+    const message = `Hello, World (step #${step + 1})!`
+    producerPoint = await push(producerPoint, message)
+  }
+
+  let consumerPoint = stream
+  for (let step = 0; step < 3; step += 1) {
+    const { next, current } = await pull(consumerPoint)
+
+    expect(current).toBe(`Hello, World (step #${step + 1})!`)
+    consumerPoint = next
+  }
 })
