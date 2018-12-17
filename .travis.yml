@@ -1,0 +1,11 @@
+language: node_js
+
+node_js:
+  - "8"
+  - node
+
+# before_deploy:
+#  - npm run build
+
+cache:
+  yarn: true
