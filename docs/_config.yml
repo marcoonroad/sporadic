@@ -1,0 +1,11 @@
+title: sporadic
+description: "Composable Concurrency Abstractions for Node.JS."
+theme: jekyll-theme-slate
+repository: marcoonroad/sporadic
+show_downloads: false
+google_analytics: UA-41209773-2
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - CNAME
+  - vendor

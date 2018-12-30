@@ -81,5 +81,7 @@ If you don't like to type too much, you can import all the available operations
 with this submodule:
 
 ```javascript
-const { open, send, receive, close, closed } = require('sporadic').channels
+const {
+  open, send, receive, close, closed
+} = require('sporadic').channels
 ```
