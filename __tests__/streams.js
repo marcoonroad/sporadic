@@ -1,6 +1,8 @@
 /* eslint-env node, es6, jest */
 
-const { open, push, pull, close } = require('sporadic').streams
+'use strict'
+
+const { open, push, pull, close } = require('../src/sporadic').streams
 
 // hack / workaround to drop unhandled promise rejection warning
 const ignorePromises = (promises) => {

@@ -1,12 +1,13 @@
 {
   "name": "sporadic",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Composable Concurrency Abstractions for Node.JS.",
   "main": "src/sporadic/index.js",
   "scripts": {
     "lint": "standard",
     "pretest": "standard",
-    "test": "NODE_PATH=src jest"
+    "test": "jest --verbose",
+    "coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,7 @@
     "async-await",
     "streams",
     "promises",
+    "channels",
     "reactive-programming"
   ],
   "author": "Marco Aurélio da Silva <marcoonroad@gmail.com>",
