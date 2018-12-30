@@ -16,7 +16,7 @@ it('should open fresh channels', async () => {
   expect(channel3).not.toBe(channel1)
 })
 
-it('should open & close channels', async () => {
+it('should close channels with pending receive calls', async () => {
   expect.assertions(7)
 
   const channel = await open()
@@ -37,6 +37,23 @@ it('should open & close channels', async () => {
   await expect(closePromise01).resolves.toBe(true)
   await expect(closePromise02).resolves.toBe(false)
   await expect(closePromise03).resolves.toBe(false)
+})
+
+it('should close channels with pending send calls', async () => {
+  expect.assertions(5)
+
+  const channel = await open()
+  const sendPromise01 = send(channel, 'It is a received message!')
+  const closePromise = close(channel)
+  const sendPromise02 = send(channel, 'Never received message!')
+  const receivePromise01 = receive(channel)
+  const receivePromise02 = receive(channel)
+
+  await expect(sendPromise02).rejects.toBeDefined()
+  await expect(receivePromise01).resolves.toBe('It is a received message!')
+  await expect(receivePromise02).rejects.toBeDefined()
+  await expect(sendPromise01).resolves.toBe(true)
+  await expect(closePromise).resolves.toBe(true)
 })
 
 it('should send and receive over open channels', async () => {

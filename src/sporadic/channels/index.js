@@ -7,6 +7,15 @@ const utils = require('../utils')
 const error = () =>
   Error('Channel is closed!')
 
+const breakDemands = channel => {
+  // breaks all the pending receive calls
+  while (channel.demands.length !== 0) {
+    const demand = channel.demands.shift()
+
+    demand.reject(error())
+  }
+}
+
 const create = () => {
   const channel = {}
 
@@ -72,12 +81,7 @@ const close = channel => {
 
   channel.isClosed = true
 
-  // breaks all the pending receive calls
-  while (channel.demands.length !== 0) {
-    const demand = channel.demands.shift()
-
-    demand.reject(error())
-  }
+  breakDemands(channel)
 
   channel.closed.resolve(true)
   return utils.resolved(true)

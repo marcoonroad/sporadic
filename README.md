@@ -4,7 +4,7 @@ Composable Concurrency Abstractions for Node.JS.
 
 <a href="https://travis-ci.com/marcoonroad/sporadic"><img src="https://img.shields.io/travis/marcoonroad/sporadic.svg?style=flat-square&logo=travis"/></a>
 <a href="https://gitlab.com/marcoonroad/sporadic/pipelines"><img src="https://img.shields.io/gitlab/pipeline/marcoonroad/sporadic.svg?style=flat-square&logo=gitlab"/></a>
-<a href="https://www.npmjs.com/package/sporadic"><img src="https://img.shields.io/npm/dm/sporadic.svg?style=flat-square&logo=npm"/></a>
+<a href="https://www.npmjs.com/package/sporadic"><img src="https://img.shields.io/npm/dw/sporadic.svg?style=flat-square&logo=npm"/></a>
 <a href="https://github.com/marcoonroad/sporadic/blob/master/LICENSE"><img src="https://img.shields.io/github/license/marcoonroad/sporadic.svg?style=flat-square&logo=github"/></a>
 
 ## Installation
@@ -41,7 +41,9 @@ Currently, the following abstractions are implemented:
 - `sporadic.streams`, an abstraction for reactive streams made of multiple
   publishers and multiple subscribers. The subscription process is implicit,
   the reference for the stream object is all that is needed.
-
+- `sporadic.channels`, an abstraction for synchronous queues made of many
+  producers and consumers. This concurrent data type is a bare minimal tool for
+  pipelines of chained producers and consumers.
 
 ## Remarks
 
