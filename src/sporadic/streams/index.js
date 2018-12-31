@@ -10,6 +10,7 @@ let create = null
 create = () => {
   const { promise, resolve, reject } = utils.defer()
 
+  const broken = false
   const produced = false
   const next = promise.then(create)
 
@@ -18,7 +19,8 @@ create = () => {
     next,
     resolve,
     reject,
-    produced
+    produced,
+    broken
   }
 
   return stream
@@ -42,7 +44,7 @@ const pull = async stream => {
 const available = async stream => {
   let point = stream
 
-  while (point.produced) {
+  while (point.produced && !point.broken) {
     const { next } = await pull(point)
 
     point = next
@@ -68,10 +70,15 @@ const push = async (stream, value) => {
 const close = async (stream, reason) => {
   const point = await available(stream)
 
-  point.reject(reason)
-  point.produced = true
+  if (point.broken) {
+    await point.next // always fails
+  } else {
+    point.reject(reason)
+    point.produced = true
+    point.broken = true
 
-  throw reason
+    throw reason
+  }
 }
 
 module.exports.open = open

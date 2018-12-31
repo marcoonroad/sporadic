@@ -106,7 +106,10 @@ await sporadicStreams.close(stream, reason)
 
 Previous clients might not be up-to-date (due late computations), so they will
 keep reading values until this `reason` is available, then they will break /
-fail with that.
+fail with that. Further calls on `close` are ignored, so close is
+non-deterministic whenever a race occurs (that is, multiple API clients calling
+that operation). The first close call wins over the rest, and close _will always
+throws the reason of the first call_.
 
 ---
 
