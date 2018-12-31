@@ -2,7 +2,7 @@
 
 'use strict'
 
-const { open, send, receive, close, closed } = require('../src/sporadic').channels
+const { open, send, receive, close, closed } = require('../build/sporadic').channels
 
 it('should open fresh channels', async () => {
   expect.assertions(3)

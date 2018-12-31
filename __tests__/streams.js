@@ -2,7 +2,7 @@
 
 'use strict'
 
-const { open, push, pull, close } = require('../src/sporadic').streams
+const { open, push, pull, close } = require('../build/sporadic').streams
 
 // hack / workaround to drop unhandled promise rejection warning
 const ignorePromises = (promises) => {
