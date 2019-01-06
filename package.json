@@ -10,6 +10,8 @@
     "test": "LIB_DIR=build jest --verbose",
     "precoverage": "yarn run test",
     "coverage": "LIB_DIR=src jest --coverage",
+    "prereport": "yarn run coverage",
+    "report": "cat coverage/lcov.info | coveralls",
     "jekyll:setup": "cd docs && bundle install --path vendor/bundle && cd ..",
     "jekyll:build": "cp README.md docs/index.md",
     "jekyll:serve": "cd docs && bundle exec jekyll serve && cd ..",
@@ -29,7 +31,8 @@
   ],
   "standard": {
     "ignore": [
-      "build/"
+      "build/",
+      "node_modules/"
     ],
     "parser": "babel-eslint"
   },
@@ -43,6 +46,7 @@
     "babel-cli": "^6.26.0",
     "babel-eslint": "^10.0.1",
     "babel-preset-env": "^1.7.0",
+    "coveralls": "^3.0.2",
     "jest": "^23.6.0",
     "standard": "^12.0.1"
   }
