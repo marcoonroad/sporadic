@@ -2,7 +2,10 @@
 
 'use strict'
 
-const { open, push, pull, close } = require('../build/sporadic').streams
+const LIB_DIR = process.env.LIB_DIR || 'src'
+const {
+  open, push, pull, close
+} = require(`../${LIB_DIR}/sporadic`).streams
 
 // hack / workaround to drop unhandled promise rejection warning
 const ignorePromises = (promises) => {

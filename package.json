@@ -6,13 +6,14 @@
   "scripts": {
     "build": "babel src -d build",
     "lint": "standard --verbose",
-    "pretest": "yarn run lint",
-    "test": "jest --verbose",
-    "coverage": "jest --coverage",
+    "pretest": "yarn run lint && yarn run build",
+    "test": "LIB_DIR=build jest --verbose",
+    "precoverage": "yarn run test",
+    "coverage": "LIB_DIR=src jest --coverage",
     "jekyll:setup": "cd docs && bundle install --path vendor/bundle && cd ..",
     "jekyll:build": "cp README.md docs/index.md",
     "jekyll:serve": "cd docs && bundle exec jekyll serve && cd ..",
-    "prepublish": "yarn run build && yarn run test"
+    "prepublish": "yarn run build"
   },
   "repository": {
     "type": "git",
