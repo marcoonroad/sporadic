@@ -85,3 +85,46 @@ it('should send and receive over open channels', async () => {
   await close(channel)
   await expect(closed(channel)).resolves.toBe(true)
 })
+
+const random = (since, until) =>
+  Math.ceil((Math.random() * (until - since)) + since)
+
+const randomDelay = () =>
+  new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(true)
+    }, random(50, 100))
+  })
+
+it('should use channels for communication', async () => {
+  expect.assertions(5)
+
+  const channel = await open()
+
+  const producer = (async (channel) => {
+    await randomDelay()
+
+    await send(channel, 'hello')
+    await send(channel, 'world')
+    await send(channel, 'byebye')
+
+    return 'produced!'
+  })(channel)
+
+  const consumer = (async (channel) => {
+    await randomDelay()
+
+    const first = await receive(channel)
+    const second = await receive(channel)
+    const third = await receive(channel)
+
+    expect(first).toBe('hello')
+    expect(second).toBe('world')
+    expect(third).toBe('byebye')
+
+    return 'consumed!'
+  })(channel)
+
+  await expect(producer).resolves.toBe('produced!')
+  await expect(consumer).resolves.toBe('consumed!')
+})
