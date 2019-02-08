@@ -8,8 +8,10 @@ minimal abstraction is called _stream_, used to associate many producers to many
 consumers.
 
 Although not real-time (a.k.a, the synchronous / instantaneous axiom /
-assumption found on Synchronous Imperative languages, such as Lucid), this
+assumption found on Synchronous Imperative languages, such as [Lucid][1]), this
 `sporadic.streams` submodule offers asynchronous reactivity without glitches.
+Future plans include composable stream operations interacting with Channels,
+Promises, etc, in the same sense of [Perl 6's _Supply_ class][2].
 
 The API revolves around an `async` / `await` style, and thus, a promise / future
 concurrency model. Consumers read deterministically published values (the same
@@ -115,7 +117,5 @@ pattern:
 const { open, push, close, pull } = require('sporadic').streams
 ```
 
-
-## References:
-
-- [Lucid Programming Language](https://en.wikipedia.org/wiki/Lucid_(programming_language)
+  [1]: https://en.wikipedia.org/wiki/Lucid_(programming_language)
+  [2]: https://docs.perl6.org/type/Supply
