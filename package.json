@@ -3,13 +3,17 @@
   "version": "0.2.0",
   "description": "Composable Concurrency Abstractions for Node.JS.",
   "main": "build/sporadic/index.js",
+  "module": "src/sporadic/index.js",
+  "browser": "dist/sporadic.js",
   "scripts": {
-    "build": "babel src -d build",
+    "build:back": "babel src -d build",
+    "build": "yarn run build:back && yarn run build:front",
+    "build:front": "rollup -c",
     "lint": "standard --verbose",
     "pretest": "yarn run lint && yarn run build",
-    "test": "LIB_DIR=build jest --verbose",
+    "test": "LIB_DIR=build/sporadic jest --verbose",
     "precoverage": "yarn run test",
-    "coverage": "LIB_DIR=src jest --coverage",
+    "coverage": "LIB_DIR=src/sporadic jest --coverage",
     "prereport": "yarn run coverage",
     "report": "cat coverage/lcov.info | coveralls",
     "jekyll:setup": "cd docs && bundle install --path vendor/bundle && cd ..",
@@ -31,6 +35,7 @@
   ],
   "standard": {
     "ignore": [
+      "dist/",
       "build/",
       "node_modules/"
     ],
@@ -45,9 +50,15 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-eslint": "^10.0.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "babel-preset-env": "^1.7.0",
+    "babel-preset-latest": "^6.24.1",
     "coveralls": "^3.0.2",
     "jest": "^23.6.0",
+    "rollup": "^1.1.2",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "rollup-plugin-terser": "^4.0.4",
     "standard": "^12.0.1"
   }
 }

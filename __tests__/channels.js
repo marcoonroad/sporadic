@@ -5,7 +5,7 @@
 const LIB_DIR = process.env.LIB_DIR || 'src'
 const {
   open, send, receive, close, closed
-} = require(`../${LIB_DIR}/sporadic`).channels
+} = require(`../${LIB_DIR}`).channels
 
 it('should open fresh channels', async () => {
   expect.assertions(3)

@@ -5,7 +5,7 @@
 const LIB_DIR = process.env.LIB_DIR || 'src'
 const {
   open, push, pull, close
-} = require(`../${LIB_DIR}/sporadic`).streams
+} = require(`../${LIB_DIR}`).streams
 
 // hack / workaround to drop unhandled promise rejection warning
 const ignorePromises = (promises) => {
