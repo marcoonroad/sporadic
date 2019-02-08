@@ -1,12 +1,21 @@
 {
   "name": "sporadic",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "Composable Concurrency Abstractions for Node.JS.",
-  "main": "src/sporadic/index.js",
+  "main": "build/sporadic/index.js",
   "scripts": {
-    "lint": "standard",
-    "pretest": "standard",
-    "test": "NODE_PATH=src jest"
+    "build": "babel src -d build",
+    "lint": "standard --verbose",
+    "pretest": "yarn run lint && yarn run build",
+    "test": "LIB_DIR=build jest --verbose",
+    "precoverage": "yarn run test",
+    "coverage": "LIB_DIR=src jest --coverage",
+    "prereport": "yarn run coverage",
+    "report": "cat coverage/lcov.info | coveralls",
+    "jekyll:setup": "cd docs && bundle install --path vendor/bundle && cd ..",
+    "jekyll:build": "cp README.md docs/index.md",
+    "jekyll:serve": "cd docs && bundle exec jekyll serve && cd ..",
+    "prepublish": "yarn run build"
   },
   "repository": {
     "type": "git",
@@ -17,8 +26,16 @@
     "async-await",
     "streams",
     "promises",
+    "channels",
     "reactive-programming"
   ],
+  "standard": {
+    "ignore": [
+      "build/",
+      "node_modules/"
+    ],
+    "parser": "babel-eslint"
+  },
   "author": "Marco Aurélio da Silva <marcoonroad@gmail.com>",
   "license": "MIT",
   "bugs": {
@@ -26,6 +43,10 @@
   },
   "homepage": "https://github.com/marcoonroad/sporadic#readme",
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^10.0.1",
+    "babel-preset-env": "^1.7.0",
+    "coveralls": "^3.0.2",
     "jest": "^23.6.0",
     "standard": "^12.0.1"
   }

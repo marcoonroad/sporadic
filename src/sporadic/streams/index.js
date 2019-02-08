@@ -1,21 +1,16 @@
 /* eslint-env node, es6 */
 
-const defer = () => {
-  const self = {}
+'use strict'
 
-  self.promise = new Promise((resolve, reject) => {
-    self.resolve = resolve
-    self.reject = reject
-  })
+const utils = require('../utils')
 
-  return self
-}
-
+// needed to perform asynchronous recursion, see function below
 let create = null
 
 create = () => {
-  const { promise, resolve, reject } = defer()
+  const { promise, resolve, reject } = utils.defer()
 
+  const broken = false
   const produced = false
   const next = promise.then(create)
 
@@ -24,14 +19,15 @@ create = () => {
     next,
     resolve,
     reject,
-    produced
+    produced,
+    broken
   }
 
   return stream
 }
 
 // unit -> stream promise
-const open = async () => create()
+const open = () => utils.resolved(create())
 
 // stream -> (value * stream) promise
 // may throws reason
@@ -48,7 +44,7 @@ const pull = async stream => {
 const available = async stream => {
   let point = stream
 
-  while (point.produced) {
+  while (point.produced && !point.broken) {
     const { next } = await pull(point)
 
     point = next
@@ -74,10 +70,15 @@ const push = async (stream, value) => {
 const close = async (stream, reason) => {
   const point = await available(stream)
 
-  point.reject(reason)
-  point.produced = true
+  if (point.broken) {
+    await point.next // always fails
+  } else {
+    point.reject(reason)
+    point.produced = true
+    point.broken = true
 
-  throw reason
+    throw reason
+  }
 }
 
 module.exports.open = open

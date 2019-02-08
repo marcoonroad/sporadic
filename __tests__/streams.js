@@ -1,6 +1,11 @@
 /* eslint-env node, es6, jest */
 
-const { open, push, pull, close } = require('sporadic').streams
+'use strict'
+
+const LIB_DIR = process.env.LIB_DIR || 'src'
+const {
+  open, push, pull, close
+} = require(`../${LIB_DIR}/sporadic`).streams
 
 // hack / workaround to drop unhandled promise rejection warning
 const ignorePromises = (promises) => {
@@ -73,7 +78,7 @@ it('should open, push & pull streams', async () => {
 })
 
 it('should open, push, pull & close streams', async () => {
-  expect.assertions(4)
+  expect.assertions(6)
 
   const producer0 = await open()
   const consumer0 = producer0
@@ -86,13 +91,19 @@ it('should open, push, pull & close streams', async () => {
   const promise3 = pull(result1.next)
   const promise4 = push(producer1, 'IGNORED VALUE.')
 
+  // only the first close wins, further ones are ignored
+  const promise5 = close(producer1, 'IGNORED ERROR MESSAGE!')
+  const promise6 = close(producer1, 'STILL IGNORED ERROR!')
+
   expect(result1.current).toBe('OK!')
 
   await expect(promise2).rejects.toBe('NOT OK!')
   await expect(promise3).rejects.toBe('NOT OK!')
   await expect(promise4).rejects.toBe('NOT OK!')
+  await expect(promise5).rejects.toBe('NOT OK!')
+  await expect(promise6).rejects.toBe('NOT OK!')
 
-  ignorePromises([ promise2, promise3, promise4 ])
+  ignorePromises([ promise2, promise3, promise4, promise5, promise6 ])
 })
 
 it('should replay the pull for the same stream point', async () => {
