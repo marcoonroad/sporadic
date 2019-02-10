@@ -88,21 +88,21 @@ it('should open, push, pull & close streams', async () => {
   const producer1 = await push(producer0, 'OK!')
   const result1 = await promise1
 
-  const promise2 = close(producer1, 'NOT OK!')
+  const promise2 = close(producer1)
   const promise3 = pull(result1.next)
   const promise4 = push(producer1, 'IGNORED VALUE.')
 
-  // only the first close wins, further ones are ignored
-  const promise5 = close(producer1, 'IGNORED ERROR MESSAGE!')
-  const promise6 = close(producer1, 'STILL IGNORED ERROR!')
+  // close is idempotent
+  const promise5 = close(producer1)
+  const promise6 = close(producer1)
 
   expect(result1.current).toBe('OK!')
 
-  await expect(promise2).rejects.toBe('NOT OK!')
-  await expect(promise3).rejects.toBe('NOT OK!')
-  await expect(promise4).rejects.toBe('NOT OK!')
-  await expect(promise5).rejects.toBe('NOT OK!')
-  await expect(promise6).rejects.toBe('NOT OK!')
+  await expect(promise2).rejects.toMatchObject({ message: 'Stream is closed!' })
+  await expect(promise3).rejects.toMatchObject({ message: 'Stream is closed!' })
+  await expect(promise4).rejects.toMatchObject({ message: 'Stream is closed!' })
+  await expect(promise5).rejects.toMatchObject({ message: 'Stream is closed!' })
+  await expect(promise6).rejects.toMatchObject({ message: 'Stream is closed!' })
 
   ignorePromises([ promise2, promise3, promise4, promise5, promise6 ])
 })

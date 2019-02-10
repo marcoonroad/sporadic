@@ -32,11 +32,11 @@ it('should close channels with pending receive calls', async () => {
   const closePromise02 = close(channel)
   const closePromise03 = close(channel)
 
-  await expect(receivePromise).rejects.toBeDefined()
+  await expect(receivePromise).rejects.toMatchObject({ message: 'Channel is closed!' })
   await expect(closedPromise).resolves.toBe(true)
 
-  await expect(send(channel, 'Oops!')).rejects.toBeDefined()
-  await expect(receive(channel)).rejects.toBeDefined()
+  await expect(send(channel, 'Oops!')).rejects.toMatchObject({ message: 'Channel is closed!' })
+  await expect(receive(channel)).rejects.toMatchObject({ message: 'Channel is closed!' })
 
   await expect(closePromise01).resolves.toBe(true)
   await expect(closePromise02).resolves.toBe(false)
@@ -53,9 +53,9 @@ it('should close channels with pending send calls', async () => {
   const receivePromise01 = receive(channel)
   const receivePromise02 = receive(channel)
 
-  await expect(sendPromise02).rejects.toBeDefined()
+  await expect(sendPromise02).rejects.toMatchObject({ message: 'Channel is closed!' })
   await expect(receivePromise01).resolves.toBe('It is a received message!')
-  await expect(receivePromise02).rejects.toBeDefined()
+  await expect(receivePromise02).rejects.toMatchObject({ message: 'Channel is closed!' })
   await expect(sendPromise01).resolves.toBe(true)
   await expect(closePromise).resolves.toBe(true)
 })

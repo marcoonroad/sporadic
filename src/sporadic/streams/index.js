@@ -4,6 +4,9 @@
 
 const utils = require('../utils')
 
+const error = () =>
+  Error('Stream is closed!')
+
 // needed to perform asynchronous recursion, see function below
 let create = null
 
@@ -67,17 +70,17 @@ const push = async (stream, value) => {
 
 // stream * reason -> void promise
 // never returns, throws reason
-const close = async (stream, reason) => {
+const close = async stream => {
   const point = await available(stream)
 
   if (point.broken) {
     await point.next // always fails
   } else {
-    point.reject(reason)
+    point.reject(error())
     point.produced = true
     point.broken = true
 
-    throw reason
+    throw error()
   }
 }
 

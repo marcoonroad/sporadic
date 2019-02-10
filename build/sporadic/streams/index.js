@@ -6,6 +6,10 @@ function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, a
 
 var utils = require('../utils');
 
+var error = function error() {
+  return Error('Stream is closed!');
+};
+
 // needed to perform asynchronous recursion, see function below
 var _create = null;
 
@@ -158,7 +162,7 @@ var push = function () {
 // stream * reason -> void promise
 // never returns, throws reason
 var close = function () {
-  var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(stream, reason) {
+  var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(stream) {
     var point;
     return regeneratorRuntime.wrap(function _callee4$(_context4) {
       while (1) {
@@ -183,11 +187,11 @@ var close = function () {
             break;
 
           case 8:
-            point.reject(reason);
+            point.reject(error());
             point.produced = true;
             point.broken = true;
 
-            throw reason;
+            throw error();
 
           case 12:
           case 'end':
@@ -197,7 +201,7 @@ var close = function () {
     }, _callee4, undefined);
   }));
 
-  return function close(_x5, _x6) {
+  return function close(_x5) {
     return _ref5.apply(this, arguments);
   };
 }();
