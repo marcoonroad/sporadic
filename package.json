@@ -10,7 +10,9 @@
     "build:front": "rollup -c --environment INCLUDE_DEPS,BUILD:production",
     "lint": "standard --verbose",
     "pretest": "yarn run lint && yarn run build",
-    "test": "LIB_DIR=build/sporadic jest --verbose",
+    "test:back": "LIB_DIR=build/sporadic jest --verbose",
+    "test:front": "LIB_DIR=dist/index.js BROWSER_ENV=1 jest --verbose",
+    "test": "yarn run test:back && yarn run test:front",
     "precoverage": "yarn run test",
     "coverage": "LIB_DIR=src/sporadic jest --coverage",
     "prereport": "yarn run coverage",
@@ -33,6 +35,22 @@
     "channels",
     "reactive-programming"
   ],
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "./node_modules/",
+      "./support/"
+    ],
+    "collectCoverageFrom": [
+      "**/*.{js,jsx}",
+      "!**/node_modules/**",
+      "!**/support/**",
+      "!**/dist/**",
+      "!**/build/**",
+      "!**/docs/**",
+      "!**/coverage/**",
+      "!**/rollup.config.js"
+    ]
+  },
   "standard": {
     "ignore": [
       "dist/",
@@ -55,6 +73,7 @@
     "babel-preset-latest": "^6.24.1",
     "coveralls": "^3.0.2",
     "jest": "^23.6.0",
+    "jsdom": "^13.2.0",
     "rollup": "^1.1.2",
     "rollup-plugin-commonjs": "^9.2.0",
     "rollup-plugin-node-resolve": "^4.0.0",

@@ -2,10 +2,11 @@
 
 'use strict'
 
-const LIB_DIR = process.env.LIB_DIR || 'src'
+const sporadic = require('../support').sporadic
+
 const {
   open, send, receive, close, closed
-} = require(`../${LIB_DIR}`).channels
+} = sporadic.channels
 
 it('should open fresh channels', async () => {
   expect.assertions(3)
