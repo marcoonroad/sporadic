@@ -5,10 +5,11 @@ const terser = require('rollup-plugin-terser').terser
 module.exports = {
   input: 'src/sporadic/index.js',
   output: {
-    file: 'dist/sporadic.js',
+    file: 'dist/index.js',
     format: 'iife',
     name: 'sporadic',
-    compact: true
+    compact: true,
+    exports: 'named'
   },
   plugins: [
     nodeResolve({

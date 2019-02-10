@@ -1,5 +1,5 @@
 title: sporadic
-description: "Composable Concurrency Abstractions for Node.JS."
+description: "Composable Concurrency Abstractions for JavaScript."
 theme: jekyll-theme-slate
 repository: marcoonroad/sporadic
 show_downloads: false

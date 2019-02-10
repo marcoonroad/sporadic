@@ -1,6 +1,6 @@
 # sporadic
 
-Composable Concurrency Abstractions for Node.JS.
+Composable Concurrency Abstractions for JavaScript.
 
 <a href="https://travis-ci.com/marcoonroad/sporadic"><img src="https://img.shields.io/travis/com/marcoonroad/sporadic.svg?style=flat-square&logo=travis"/></a>
 <a href="https://gitlab.com/marcoonroad/sporadic/pipelines"><img src="https://img.shields.io/gitlab/pipeline/marcoonroad/sporadic.svg?style=flat-square&logo=gitlab"/></a>
@@ -13,7 +13,13 @@ Composable Concurrency Abstractions for Node.JS.
 
 ## Installation
 
-Through NPM (if available):
+Through UNPKG (for browsers):
+
+```html
+<script src="https://unpkg.com/sporadic/dist/index.js"></script>
+```
+
+Through NPM:
 
 ```shell
 $ npm install sporadic
