@@ -136,14 +136,14 @@ const closed = channel =>
 const sendAfter = (delay, channel, message, expiration) =>
   new Promise((resolve, reject) => {
     setTimeout(() => {
-      send(channel, message, expiration).then(resolve).catch(reject)
+      send(channel, message, expiration).then(resolve, reject)
     }, Math.floor(Math.max(0, delay)))
   })
 
 const receiveAfter = (delay, channel, timeout) =>
   new Promise((resolve, reject) => {
     setTimeout(() => {
-      receive(channel, timeout).then(resolve).catch(reject)
+      receive(channel, timeout).then(resolve, reject)
     }, Math.floor(Math.max(0, delay)))
   })
 

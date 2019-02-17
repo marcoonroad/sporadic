@@ -131,7 +131,7 @@ var closed = function closed(channel) {
 var sendAfter = function sendAfter(delay, channel, message, expiration) {
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
-      _send(channel, message, expiration).then(resolve).catch(reject);
+      _send(channel, message, expiration).then(resolve, reject);
     }, Math.floor(Math.max(0, delay)));
   });
 };
@@ -139,7 +139,7 @@ var sendAfter = function sendAfter(delay, channel, message, expiration) {
 var receiveAfter = function receiveAfter(delay, channel, timeout) {
   return new Promise(function (resolve, reject) {
     setTimeout(function () {
-      _receive(channel, timeout).then(resolve).catch(reject);
+      _receive(channel, timeout).then(resolve, reject);
     }, Math.floor(Math.max(0, delay)));
   });
 };
