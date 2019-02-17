@@ -35,6 +35,11 @@ To load this submodule:
 const sporadicStreams = require('sporadic').streams
 ```
 
+If you're using the browser build from [UNPKG][3], the `sporadic` module will be
+available on the global scope of your page. In this context, just replace the
+`sporadicStreams` variable by the projection/expression `sporadic.streams` in
+all the examples below.
+
 ---
 
 Creates a new reactive stream:
@@ -122,3 +127,4 @@ const { open, push, close, pull } = require('sporadic').streams
 
   [1]: https://en.wikipedia.org/wiki/Lucid_(programming_language)
   [2]: https://docs.perl6.org/type/Supply
+  [3]: https://unpkg.com/sporadic/dist/index.js

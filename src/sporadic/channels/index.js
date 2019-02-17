@@ -50,7 +50,7 @@ send = (channel, message, expiration) => {
     ) {
       setTimeout(() => {
         received.resolve(false)
-      }, expiration)
+      }, Math.floor(expiration))
     }
 
     channel.supplies.push({ received, message })
@@ -95,7 +95,7 @@ receive = (channel, timeout) => {
     ) {
       setTimeout(() => {
         demand.reject(timeoutError())
-      }, timeout)
+      }, Math.floor(timeout))
     }
 
     return demand.promise

@@ -49,7 +49,7 @@ _send = function send(channel, message, expiration) {
     if (expiration !== undefined && expiration !== null && typeof expiration === 'number' && expiration >= 1) {
       setTimeout(function () {
         received.resolve(false);
-      }, expiration);
+      }, Math.floor(expiration));
     }
 
     channel.supplies.push({ received: received, message: message });
@@ -89,7 +89,7 @@ _receive = function receive(channel, timeout) {
     if (timeout !== undefined && timeout !== null && typeof timeout === 'number' && timeout >= 0) {
       setTimeout(function () {
         demand.reject(timeoutError());
-      }, timeout);
+      }, Math.floor(timeout));
     }
 
     return demand.promise;
