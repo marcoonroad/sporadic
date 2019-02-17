@@ -15,7 +15,7 @@ const breakDemands = channel => {
   while (channel.demands.length !== 0) {
     const demand = channel.demands.shift()
 
-    demand.reject(closeError())
+    demand.reject(closeError()) // no-op if demand defer is changed
   }
 }
 
@@ -33,8 +33,7 @@ const create = () => {
 const open = () => utils.resolved(create())
 
 let send = null
-
-send = (channel, message) => {
+send = (channel, message, expiration) => {
   if (channel.demands.length === 0) {
     // cannot push on closed channel
     if (channel.isClosed) {
@@ -42,6 +41,17 @@ send = (channel, message) => {
     };
 
     const received = utils.defer()
+
+    if (
+      (expiration !== undefined) &&
+      (expiration !== null) &&
+      (typeof expiration === 'number') &&
+      (expiration >= 1)
+    ) {
+      setTimeout(() => {
+        received.resolve(false)
+      }, expiration)
+    }
 
     channel.supplies.push({ received, message })
 
@@ -65,7 +75,8 @@ send = (channel, message) => {
   }
 }
 
-const receive = (channel, timeout) => {
+let receive = null
+receive = (channel, timeout) => {
   // doesn't break on close if not empty
   if (channel.supplies.length === 0) {
     if (channel.isClosed) {
@@ -90,7 +101,15 @@ const receive = (channel, timeout) => {
     return demand.promise
   } else {
     // closed non-empty streams don't break on receive
-    const supply = channel.supplies.shift()
+    let supply = channel.supplies.shift()
+
+    while (channel.supplies.length > 0 && supply.received.changed) {
+      supply = channel.supplies.shift()
+    }
+
+    if (supply.received.changed) {
+      return receive(channel, timeout) // recursion me
+    }
 
     supply.received.resolve(true)
 

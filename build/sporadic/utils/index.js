@@ -46,11 +46,6 @@ var rejected = function rejected(reason) {
   });
 };
 
-var timestamp = function timestamp() {
-  return new Date().getTime();
-};
-
 module.exports.defer = defer;
 module.exports.resolved = resolved;
 module.exports.rejected = rejected;
-module.exports.timestamp = timestamp;

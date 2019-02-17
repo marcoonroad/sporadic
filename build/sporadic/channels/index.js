@@ -17,7 +17,7 @@ var breakDemands = function breakDemands(channel) {
   while (channel.demands.length !== 0) {
     var demand = channel.demands.shift();
 
-    demand.reject(closeError());
+    demand.reject(closeError()); // no-op if demand defer is changed
   }
 };
 
@@ -37,8 +37,7 @@ var open = function open() {
 };
 
 var _send = null;
-
-_send = function send(channel, message) {
+_send = function send(channel, message, expiration) {
   if (channel.demands.length === 0) {
     // cannot push on closed channel
     if (channel.isClosed) {
@@ -46,6 +45,12 @@ _send = function send(channel, message) {
     };
 
     var received = utils.defer();
+
+    if (expiration !== undefined && expiration !== null && typeof expiration === 'number' && expiration >= 1) {
+      setTimeout(function () {
+        received.resolve(false);
+      }, expiration);
+    }
 
     channel.supplies.push({ received: received, message: message });
 
@@ -69,7 +74,8 @@ _send = function send(channel, message) {
   }
 };
 
-var receive = function receive(channel, timeout) {
+var _receive = null;
+_receive = function receive(channel, timeout) {
   // doesn't break on close if not empty
   if (channel.supplies.length === 0) {
     if (channel.isClosed) {
@@ -90,6 +96,14 @@ var receive = function receive(channel, timeout) {
   } else {
     // closed non-empty streams don't break on receive
     var supply = channel.supplies.shift();
+
+    while (channel.supplies.length > 0 && supply.received.changed) {
+      supply = channel.supplies.shift();
+    }
+
+    if (supply.received.changed) {
+      return _receive(channel, timeout); // recursion me
+    }
 
     supply.received.resolve(true);
 
@@ -116,6 +130,6 @@ var closed = function closed(channel) {
 
 module.exports.open = open;
 module.exports.send = _send;
-module.exports.receive = receive;
+module.exports.receive = _receive;
 module.exports.close = close;
 module.exports.closed = closed;

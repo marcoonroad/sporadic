@@ -40,10 +40,6 @@ const resolved = value =>
 const rejected = reason =>
   new Promise((resolve, reject) => reject(reason))
 
-const timestamp = () =>
-  (new Date()).getTime()
-
 module.exports.defer = defer
 module.exports.resolved = resolved
 module.exports.rejected = rejected
-module.exports.timestamp = timestamp
