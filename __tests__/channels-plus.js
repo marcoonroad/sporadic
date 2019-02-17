@@ -5,31 +5,30 @@
 jest.useFakeTimers()
 
 const sporadic = require('../support').sporadic
-const { open, send, receive } = sporadic.channels
+const { open, send, receive, sendAfter, receiveAfter } = sporadic.channels
 const timeoutError = { message: 'Timeout while listening channel!' }
 
 it('should handle timeouts on receive calls', async () => {
-  expect.assertions(5)
+  expect.assertions(6)
 
   const channel = await open()
   const result1 = receive(channel, 0) // no block, check if there's a sent message
   const result2 = receive(channel, 3000)
   const result3 = receive(channel, 5000) // sorry, comes later
 
-  setTimeout(() => {
-    send(channel, 'Hello! Sorry by being late...')
-  }, 1500)
+  const wasReceived1 = sendAfter(1500, channel, 'Hello! Sorry by being late...')
 
   jest.runOnlyPendingTimers()
   await expect(result1).rejects.toMatchObject(timeoutError)
   await expect(result2).resolves.toBe('Hello! Sorry by being late...')
   await expect(result3).rejects.toMatchObject(timeoutError)
 
-  const wasReceived = send(channel, 'Yep, I arrive in time!')
+  const wasReceived2 = send(channel, 'Yep, I arrive in time!')
   const result4 = receive(channel) //  blocks indefinitely
 
   await expect(result4).resolves.toBe('Yep, I arrive in time!')
-  await expect(wasReceived).resolves.toBe(true)
+  await expect(wasReceived1).resolves.toBe(true)
+  await expect(wasReceived2).resolves.toBe(true)
 })
 
 it('should handle expirations on send calls', async () => {
@@ -40,11 +39,7 @@ it('should handle expirations on send calls', async () => {
   const wasReceived1 = send(channel, 'Hi Mike!', 2500)
   const wasReceived2 = send(channel, 'Hi Emily!', 1000)
 
-  const result1 = new Promise((resolve, reject) => {
-    setTimeout(() => {
-      receive(channel).then(resolve).catch(reject)
-    }, 3000)
-  })
+  const result1 = receiveAfter(3000, channel)
 
   jest.runOnlyPendingTimers()
   const wasReceived3 = send(channel, 'Hi Mia!', 2000)
@@ -54,3 +49,10 @@ it('should handle expirations on send calls', async () => {
   await expect(wasReceived3).resolves.toBe(true)
   await expect(result1).resolves.toBe('Hi Mia!')
 })
+
+/*
+it('should mix both timeouts & expirations', async () => {
+  const channel = await open()
+
+})
+*/

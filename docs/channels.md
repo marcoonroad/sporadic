@@ -64,6 +64,30 @@ immediately be `false`. The `expiration` argument, thus, is optional (the defaul
 behavior is to disable expiration for the given message). Expiration values
 lower than `1` are ignored. Fractional numbers are rounded down by `Math.floor`.
 
+It's possible to schedule a message to be sent on the future. So, if the
+`expiration` argument is passed, the total amount of time for the "was received"
+promise to be resolved will be such "delay-to-send" + `expiration` (ignoring the
+non-deterministic aspect of `close(channel)`, clearly). The API to schedule the
+`send(...)` operation is:
+
+```javascript
+const wasReceived = await sporadicChannels.sendAfter(
+  delay, channel, 'Hi, folks!', expiration
+)
+```
+
+Where `delay` is also a unit of milliseconds. The `sendAfter(...)` behavior is
+the same of `send(...)` (with the major exception of time scheduling), and the
+`expiration` argument is optional too. In other words, the following equation
+holds (somehow, ignoring details of JavaScript internals regarding the event
+loop):
+
+```
+send(channel, msg, expiration?) == send(0, channel, msg, expiration?)
+```
+
+Negative `delay`s are ignored, and float `delay`s are truncated by `Math.floor`.
+
 ---
 
 Reading a sent message:
@@ -92,6 +116,26 @@ the current `receive` call.
 To disable blocking, you can just pass a `timeout` of `0` (it will just check
 if there's any available message on channel). Negative values are ignored.
 Rational/float numbers are rounded by `Math.floor`.
+
+A counterpart of `sendAfter` exists too for the `receive` operation. It's called
+`receiveAfter`, and the API resembles quite well the `sendAfter` (with `delay` being
+in milliseconds too):
+
+```javascript
+const message = await sporadicChannels.receiveAfter(
+  delay, channel, timeout
+)
+```
+
+For the same cases of `sendAfter`, the `delay` here is rounded down by
+`Math.floor` and negative values are ignored. The `timeout` is optional as well.
+The total amount for the result promise to be resolved is `delay` + `timeout`
+(if provided), otherwise, it blocks indefinitely. This equation also holds
+(roughly speaking):
+
+```
+receive(channel, timeout?) == receiveAfter(0, channel, timeout?)
+```
 
 ---
 

@@ -133,8 +133,24 @@ const close = channel => {
 const closed = channel =>
   channel.closed.promise
 
+const sendAfter = (delay, channel, message, expiration) =>
+  new Promise((resolve, reject) => {
+    setTimeout(() => {
+      send(channel, message, expiration).then(resolve).catch(reject)
+    }, Math.floor(Math.max(0, delay)))
+  })
+
+const receiveAfter = (delay, channel, timeout) =>
+  new Promise((resolve, reject) => {
+    setTimeout(() => {
+      receive(channel, timeout).then(resolve).catch(reject)
+    }, Math.floor(Math.max(0, delay)))
+  })
+
 module.exports.open = open
 module.exports.send = send
 module.exports.receive = receive
 module.exports.close = close
 module.exports.closed = closed
+module.exports.sendAfter = sendAfter
+module.exports.receiveAfter = receiveAfter

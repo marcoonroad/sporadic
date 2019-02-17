@@ -128,8 +128,26 @@ var closed = function closed(channel) {
   return channel.closed.promise;
 };
 
+var sendAfter = function sendAfter(delay, channel, message, expiration) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      _send(channel, message, expiration).then(resolve).catch(reject);
+    }, Math.floor(Math.max(0, delay)));
+  });
+};
+
+var receiveAfter = function receiveAfter(delay, channel, timeout) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(function () {
+      _receive(channel, timeout).then(resolve).catch(reject);
+    }, Math.floor(Math.max(0, delay)));
+  });
+};
+
 module.exports.open = open;
 module.exports.send = _send;
 module.exports.receive = _receive;
 module.exports.close = close;
 module.exports.closed = closed;
+module.exports.sendAfter = sendAfter;
+module.exports.receiveAfter = receiveAfter;
