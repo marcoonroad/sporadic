@@ -4,15 +4,18 @@
 
 const utils = require('../utils')
 
-const error = () =>
+const closeError = () =>
   Error('Channel is closed!')
+
+const timeoutError = () =>
+  Error('Timeout while listening channel!')
 
 const breakDemands = channel => {
   // breaks all the pending receive calls
   while (channel.demands.length !== 0) {
     const demand = channel.demands.shift()
 
-    demand.reject(error())
+    demand.reject(closeError())
   }
 }
 
@@ -29,11 +32,13 @@ const create = () => {
 
 const open = () => utils.resolved(create())
 
-const send = (channel, message) => {
+let send = null
+
+send = (channel, message) => {
   if (channel.demands.length === 0) {
     // cannot push on closed channel
     if (channel.isClosed) {
-      return utils.rejected(error())
+      return utils.rejected(closeError())
     };
 
     const received = utils.defer()
@@ -44,7 +49,15 @@ const send = (channel, message) => {
   } else {
     // close function will break all available demands,
     // so this path is never reached after close call
-    const demand = channel.demands.shift()
+    let demand = channel.demands.shift()
+
+    while (channel.demands.length > 0 && demand.changed) {
+      demand = channel.demands.shift()
+    }
+
+    if (demand.changed) {
+      return send(channel, message) // recursion me
+    }
 
     demand.resolve(message)
 
@@ -52,16 +65,27 @@ const send = (channel, message) => {
   }
 }
 
-const receive = channel => {
+const receive = (channel, timeout) => {
   // doesn't break on close if not empty
   if (channel.supplies.length === 0) {
     if (channel.isClosed) {
-      return utils.rejected(error())
+      return utils.rejected(closeError())
     }
 
     const demand = utils.defer()
 
     channel.demands.push(demand)
+
+    if (
+      (timeout !== undefined) &&
+      (timeout !== null) &&
+      (typeof timeout === 'number') &&
+      (timeout >= 0)
+    ) {
+      setTimeout(() => {
+        demand.reject(timeoutError())
+      }, timeout)
+    }
 
     return demand.promise
   } else {

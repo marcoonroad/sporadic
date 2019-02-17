@@ -4,8 +4,12 @@
 
 var utils = require('../utils');
 
-var error = function error() {
+var closeError = function closeError() {
   return Error('Channel is closed!');
+};
+
+var timeoutError = function timeoutError() {
+  return Error('Timeout while listening channel!');
 };
 
 var breakDemands = function breakDemands(channel) {
@@ -13,7 +17,7 @@ var breakDemands = function breakDemands(channel) {
   while (channel.demands.length !== 0) {
     var demand = channel.demands.shift();
 
-    demand.reject(error());
+    demand.reject(closeError());
   }
 };
 
@@ -32,11 +36,13 @@ var open = function open() {
   return utils.resolved(create());
 };
 
-var send = function send(channel, message) {
+var _send = null;
+
+_send = function send(channel, message) {
   if (channel.demands.length === 0) {
     // cannot push on closed channel
     if (channel.isClosed) {
-      return utils.rejected(error());
+      return utils.rejected(closeError());
     };
 
     var received = utils.defer();
@@ -49,22 +55,36 @@ var send = function send(channel, message) {
     // so this path is never reached after close call
     var demand = channel.demands.shift();
 
+    while (channel.demands.length > 0 && demand.changed) {
+      demand = channel.demands.shift();
+    }
+
+    if (demand.changed) {
+      return _send(channel, message); // recursion me
+    }
+
     demand.resolve(message);
 
     return utils.resolved(true);
   }
 };
 
-var receive = function receive(channel) {
+var receive = function receive(channel, timeout) {
   // doesn't break on close if not empty
   if (channel.supplies.length === 0) {
     if (channel.isClosed) {
-      return utils.rejected(error());
+      return utils.rejected(closeError());
     }
 
     var demand = utils.defer();
 
     channel.demands.push(demand);
+
+    if (timeout !== undefined && timeout !== null && typeof timeout === 'number' && timeout >= 0) {
+      setTimeout(function () {
+        demand.reject(timeoutError());
+      }, timeout);
+    }
 
     return demand.promise;
   } else {
@@ -95,7 +115,7 @@ var closed = function closed(channel) {
 };
 
 module.exports.open = open;
-module.exports.send = send;
+module.exports.send = _send;
 module.exports.receive = receive;
 module.exports.close = close;
 module.exports.closed = closed;

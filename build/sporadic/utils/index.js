@@ -4,13 +4,34 @@
 
 var defer = function defer() {
   var self = {};
+  var result = {};
 
-  self.promise = new Promise(function (resolve, reject) {
+  result.changed = false;
+
+  result.promise = new Promise(function (resolve, reject) {
     self.resolve = resolve;
     self.reject = reject;
   });
 
-  return self;
+  result.resolve = function (value) {
+    if (result.changed) {
+      return;
+    }
+
+    result.changed = true;
+    self.resolve(value);
+  };
+
+  result.reject = function (reason) {
+    if (result.changed) {
+      return;
+    }
+
+    result.changed = true;
+    self.reject(reason);
+  };
+
+  return result;
 };
 
 var resolved = function resolved(value) {
@@ -25,6 +46,11 @@ var rejected = function rejected(reason) {
   });
 };
 
+var timestamp = function timestamp() {
+  return new Date().getTime();
+};
+
 module.exports.defer = defer;
 module.exports.resolved = resolved;
 module.exports.rejected = rejected;
+module.exports.timestamp = timestamp;

@@ -4,13 +4,34 @@
 
 const defer = () => {
   const self = {}
+  const result = {}
 
-  self.promise = new Promise((resolve, reject) => {
+  result.changed = false
+
+  result.promise = new Promise((resolve, reject) => {
     self.resolve = resolve
     self.reject = reject
   })
 
-  return self
+  result.resolve = (value) => {
+    if (result.changed) {
+      return
+    }
+
+    result.changed = true
+    self.resolve(value)
+  }
+
+  result.reject = (reason) => {
+    if (result.changed) {
+      return
+    }
+
+    result.changed = true
+    self.reject(reason)
+  }
+
+  return result
 }
 
 const resolved = value =>
@@ -19,6 +40,10 @@ const resolved = value =>
 const rejected = reason =>
   new Promise((resolve, reject) => reject(reason))
 
+const timestamp = () =>
+  (new Date()).getTime()
+
 module.exports.defer = defer
 module.exports.resolved = resolved
 module.exports.rejected = rejected
+module.exports.timestamp = timestamp
