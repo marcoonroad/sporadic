@@ -40,6 +40,18 @@ const resolved = value =>
 const rejected = reason =>
   new Promise((resolve, reject) => reject(reason))
 
+/*
+const delayed = procedure =>
+  Promise.resolve(true).then(procedure).catch(console.log)
+
+const time = () =>
+  (new Date()).getTime()
+*/
+
 module.exports.defer = defer
 module.exports.resolved = resolved
 module.exports.rejected = rejected
+/*
+module.exports.delayed = delayed
+module.exports.time = time
+*/

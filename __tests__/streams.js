@@ -2,28 +2,18 @@
 
 'use strict'
 
-const sporadic = require('../support').sporadic
+const support = require('../support')
+const sporadic = support.sporadic
+const utils = support.utils
 
 const {
   open, push, pull, close
 } = sporadic.streams
 
 // hack / workaround to drop unhandled promise rejection warning
-const ignorePromises = (promises) => {
-  return Promise.all(promises).catch(() => { })
-}
-
-const extractValue = async (stream) => {
-  const result = await stream
-
-  return result.current
-}
-
-const extractNext = async (stream) => {
-  const result = await stream
-
-  return result.next
-}
+const ignorePromises = utils.ignorePromises
+const extractValue = utils.extractValue
+const extractNext = utils.extractNext
 
 it('should open streams', async () => {
   expect.assertions(3)

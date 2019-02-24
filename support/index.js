@@ -34,3 +34,4 @@ const preload = function () {
 }
 
 module.exports.sporadic = preload()
+module.exports.utils = require('./utils')
