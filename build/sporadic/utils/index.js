@@ -2,18 +2,18 @@
 
 'use strict';
 
-var defer = function defer() {
-  var self = {};
-  var result = {};
+const defer = () => {
+  const self = {};
+  const result = {};
 
   result.changed = false;
 
-  result.promise = new Promise(function (resolve, reject) {
+  result.promise = new Promise((resolve, reject) => {
     self.resolve = resolve;
     self.reject = reject;
   });
 
-  result.resolve = function (value) {
+  result.resolve = value => {
     if (result.changed) {
       return;
     }
@@ -22,7 +22,7 @@ var defer = function defer() {
     self.resolve(value);
   };
 
-  result.reject = function (reason) {
+  result.reject = reason => {
     if (result.changed) {
       return;
     }
@@ -34,30 +34,10 @@ var defer = function defer() {
   return result;
 };
 
-var resolved = function resolved(value) {
-  return new Promise(function (resolve) {
-    return resolve(value);
-  });
-};
+const resolved = value => new Promise(resolve => resolve(value));
 
-var rejected = function rejected(reason) {
-  return new Promise(function (resolve, reject) {
-    return reject(reason);
-  });
-};
-
-/*
-const delayed = procedure =>
-  Promise.resolve(true).then(procedure).catch(console.log)
-
-const time = () =>
-  (new Date()).getTime()
-*/
+const rejected = reason => new Promise((resolve, reject) => reject(reason));
 
 module.exports.defer = defer;
 module.exports.resolved = resolved;
 module.exports.rejected = rejected;
-/*
-module.exports.delayed = delayed
-module.exports.time = time
-*/
