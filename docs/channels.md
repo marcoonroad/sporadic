@@ -166,7 +166,8 @@ with this submodule:
 
 ```javascript
 const {
-  open, send, receive, close, closed
+  open, send, receive, close, closed,
+  sendAfter, receiveAfter
 } = require('sporadic').channels
 ```
 

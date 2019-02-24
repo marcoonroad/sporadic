@@ -11,6 +11,27 @@ Composable Concurrency Abstractions for JavaScript.
 
 ---
 
+## Example
+
+```javascript
+#!/usr/bin/env node
+
+(async () => {
+  const sporadic = require('sporadic')
+  const channel = await sporadic.channels.open()
+
+  const wasReceivedPromise = sporadic.channels.send(channel, "Hello, World!")
+  const messagePromise = sporadic.channels.receive(channel)
+  const promises = [ wasReceivedPromise, messagePromise ]
+
+  const [ wasReceived, message ] = await Promise.all(promises)
+  console.log(wasReceived) // ==> true
+  console.log(message) // ==> Hello, World!
+})()
+```
+
+---
+
 ## Installation
 
 Through UNPKG (for browsers):

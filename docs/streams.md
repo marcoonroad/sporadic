@@ -118,11 +118,52 @@ but don't rely on that message content, it may be prone to future changes.
 
 ---
 
-To import all operations on the current scope, you can use the following
-pattern:
+A ticker is also provided. It fires `true` in some given interval. To create
+such stream which ticks periodical signals, use the `every` operation:
 
 ```javascript
-const { open, push, close, pull } = require('sporadic').streams
+const tickerStream = await sporadicStreams.every(milliseconds)
+```
+
+The interval argument is under milliseconds basis to comply with the well-known
+`setTimeout` and `setInterval` JavaScript functions. To stop the ticker stream
+from firing further events, just call `close` on such stream (it will also
+dispose the internal interval timer associated within).
+
+---
+
+'Cause streams resemble quite well lists, there's also some combinators provided
+here. They're `map` and `filter`:
+
+```javascript
+const succ = number => number + 1
+const even = number => (number % 2) === 0
+
+const producer = await sporadicStreams.open()
+const consumer = await sporadicStreams.map(producer, succ)
+const filtered = await sporadicStreams.filter(consumer, even)
+
+// fire values/events from producer stream to follow down
+// them on filtered stream
+// ...
+```
+
+Whenever the parent/origin stream is closed, the children/result streams are
+closed as well. In the case above, if `producer` is closed, both `consumer` and
+`filtered` will be closed too. And if just `consumer` is closed, `filtered` will
+be closed but not `producer` -- here, the fired values within `producer` will be
+ignored for both closed result streams.
+
+---
+
+To import all operations on the current scope, you can use the following
+pattern (from modern JS):
+
+```javascript
+const {
+  open, push, close, pull,
+  every, map, filter
+} = require('sporadic').streams
 ```
 
   [1]: https://en.wikipedia.org/wiki/Lucid_(programming_language)
