@@ -83,7 +83,7 @@ holds (somehow, ignoring details of JavaScript internals regarding the event
 loop):
 
 ```
-send(channel, msg, expiration?) == send(0, channel, msg, expiration?)
+send(channel, msg, expiration?) == sendAfter(0, channel, msg, expiration?)
 ```
 
 Negative `delay`s are ignored, and float `delay`s are truncated by `Math.floor`.
