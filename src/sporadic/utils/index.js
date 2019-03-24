@@ -40,6 +40,10 @@ const resolved = value =>
 const rejected = reason =>
   new Promise((resolve, reject) => reject(reason))
 
+const ignorePromise = promise =>
+  promise.then(() => true).catch(() => true)
+
 module.exports.defer = defer
 module.exports.resolved = resolved
 module.exports.rejected = rejected
+module.exports.ignorePromise = ignorePromise
