@@ -66,20 +66,20 @@ const resume = async (coroutine, value) => {
     throw Error('Coroutine is dead!')
   }
 
-  await streams.push(coroutine.supplies, value)
+  await streams.push(coroutine.demands, value)
 
   if (coroutine.status === State.CREATED) {
     coroutine.status = State.RUNNING
     coroutine.computation(value).then(result => {
-      streams.push(coroutine.demands, result).then(() => {
-        channels.send(coroutine.demand, {
+      streams.push(coroutine.supplies, result).then(() => {
+        channels.send(coroutine.supply, {
           value: result,
           type: 'return'
         })
       })
       coroutine.result.resolve(result)
     }).catch(reason => {
-      channels.send(coroutine.demand, {
+      channels.send(coroutine.supply, {
         value: reason,
         type: 'error'
       })
@@ -87,10 +87,10 @@ const resume = async (coroutine, value) => {
     })
   } else {
     coroutine.status = State.RUNNING
-    channels.send(coroutine.supply, value)
+    channels.send(coroutine.demand, value)
   }
 
-  const output = await channels.receive(coroutine.demand)
+  const output = await channels.receive(coroutine.supply)
 
   if (output.type === 'error') {
     coroutine.status = State.DEAD
@@ -117,10 +117,10 @@ const suspend = async value => {
     type: 'suspend'
   }
 
-  await streams.push(coroutine.demands, value)
-  await channels.send(coroutine.demand, output)
+  await streams.push(coroutine.supplies, value)
+  await channels.send(coroutine.supply, output)
 
-  const input = await channels.receive(coroutine.supply)
+  const input = await channels.receive(coroutine.demand)
   return input
 }
 
