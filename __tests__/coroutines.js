@@ -5,13 +5,13 @@
 const sporadic = require('../support').sporadic
 
 const {
-  create, status, resume, suspend, complete
+  create, status, resume, complete
 } = sporadic.coroutines
 
 it('should be able to create a coroutine', async () => {
   expect.assertions(1)
 
-  const coroutine = await create(async () => {
+  const coroutine = await create(async function () {
     return true
   })
 
@@ -22,16 +22,16 @@ it('should be able to resume & suspend a coroutine', async () => {
   expect.assertions(10)
 
   let coroutine = null
-  coroutine = await create(async (number) => {
+  coroutine = await create(async function (number) {
     expect(number).toBe(12)
 
-    expect(status(coroutine)).toBe('RUNNING')
+    expect(this.status(coroutine)).toBe('RUNNING')
 
     await expect(resume(coroutine, 'NO NO')).rejects.toMatchObject({
       message: 'Coroutine is already running!'
     })
 
-    await expect(suspend(number + 3)).resolves.toBe('Hello, World!')
+    await expect(this.suspend(number + 3)).resolves.toBe('Hello, World!')
 
     return 'OK OK'
   })
@@ -52,7 +52,7 @@ it('should be able to resume & suspend a coroutine', async () => {
 it('should break a coroutine if it fails', async () => {
   expect.assertions(4)
 
-  const coroutine = await create(async (input) => {
+  const coroutine = await create(async function (input) {
     expect(input).toBe(undefined)
 
     throw Error('I am sorry, forgive me!')

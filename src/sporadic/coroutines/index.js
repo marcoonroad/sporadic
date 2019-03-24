@@ -21,19 +21,8 @@ const PrintState = [
   'DEAD'
 ]
 
-const stack = []
-
-const current = (coroutine) => {
-  if (coroutine) {
-    stack.push(coroutine)
-    return
-  }
-
-  return stack.pop()
-}
-
 const dispose = async coroutine => {
-  coroutine.computation = null
+  coroutine.computation = true
 
   await utils.ignorePromise(channels.close(coroutine.supply))
   await utils.ignorePromise(channels.close(coroutine.demand))
@@ -43,7 +32,15 @@ const dispose = async coroutine => {
   return true
 }
 
-const create = async computation => {
+let create = null
+let suspend = null
+let resume = null
+let status = null
+let demands = null
+let supplies = null
+let complete = null
+
+create = async computation => {
   const coroutine = {}
 
   coroutine.supplies = await streams.open()
@@ -54,11 +51,26 @@ const create = async computation => {
   coroutine.status = State.CREATED
   coroutine.result = utils.defer()
 
+  const self = {
+    suspend: (value) => suspend(coroutine, value),
+    status: () => status(coroutine),
+    supplies: () => supplies(coroutine),
+    demands: () => demands(coroutine)
+  }
+
+  coroutine.computation = computation.bind(self)
+
   return coroutine
 }
 
-const resume = async (coroutine, value) => {
-  current(coroutine)
+resume = async (coroutine, value) => {
+  if (
+    !coroutine || !coroutine.status || !coroutine.computation ||
+    !coroutine.demands || !coroutine.supplies || !coroutine.supply ||
+    !coroutine.demand || !coroutine.result
+  ) {
+    throw Error('Expected a valid coroutine!')
+  }
 
   if (coroutine.status === State.RUNNING) {
     throw Error('Coroutine is already running!')
@@ -107,8 +119,10 @@ const resume = async (coroutine, value) => {
   return output.value
 }
 
-const suspend = async value => {
-  const coroutine = current()
+suspend = async (coroutine, value) => {
+  if (coroutine.status !== State.RUNNING) {
+    throw Error('Expected an active coroutine to yield from!')
+  }
 
   coroutine.status = State.SUSPENDED
 
@@ -124,22 +138,21 @@ const suspend = async value => {
   return input
 }
 
-const status = coroutine =>
+status = coroutine =>
   PrintState[coroutine.status]
 
-const demands = coroutine =>
+demands = coroutine =>
   coroutine.demands
 
-const supplies = coroutine =>
+supplies = coroutine =>
   coroutine.supplies
 
-const complete = coroutine =>
+complete = coroutine =>
   coroutine.result.promise
 
 module.exports.create = create
 module.exports.resume = resume
 module.exports.status = status
-module.exports.suspend = suspend
 module.exports.supplies = supplies
 module.exports.demands = demands
 module.exports.complete = complete
