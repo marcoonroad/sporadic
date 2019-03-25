@@ -79,9 +79,15 @@ Currently, the following abstractions are implemented:
 - [sporadic.channels][2], an abstraction for synchronous queues made of many
   producers and consumers. This concurrent data type is a bare minimal tool for
   pipelines of chained producers and consumers.
+- [sporadic.coroutines][3], an abstraction for suspendable subroutines. Such
+  abstraction also behaves as a task/promise whenever we wait for the final
+  coroutine result (but keep in mind that coroutines can "loop" forever). It's kinda
+  like the JavaScript generators, with the sole difference of being asynchronous
+  instead synchronous calls (and thus, allowing us to mix asynchronous I/O with that).
 
   [1]: https://marcoonroad.github.io/sporadic/streams
   [2]: https://marcoonroad.github.io/sporadic/channels
+  [3]: https://marcoonroad.github.io/sporadic/coroutines
 
 ## Remarks
 
