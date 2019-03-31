@@ -2,7 +2,7 @@
 
 'use strict'
 
-const { sporadic } = require('../support')
+const { sporadic, utils } = require('../support')
 
 const { coroutines, streams } = sporadic
 
@@ -17,6 +17,7 @@ it('should listen for coroutine supplies & demands', async () => {
     let sum = 0
 
     for (let index = 1; index <= 5; index += 1) {
+      await utils.randomDelay()
       sum += await this.suspend(number * index)
     }
 
@@ -61,6 +62,8 @@ it('should mix many coroutine behaviors', async () => {
 
     expect(result).toBe('OH NO')
 
+    await utils.randomDelay()
+
     await expect(coroutines.resume(coroutine2)).resolves
       .toBe('Coroutine 2 is done!')
 
@@ -77,6 +80,7 @@ it('should mix many coroutine behaviors', async () => {
     const outputB = await coroutines.resume(coroutine4, 5)
     expect(outputB).toBe(18)
 
+    await utils.randomDelay()
     await expect(coroutines.complete(coroutine4)).resolves.toBe(18)
 
     return 'Coroutine 2 is done!'
@@ -85,6 +89,7 @@ it('should mix many coroutine behaviors', async () => {
   coroutine3 = await coroutines.create(async function () {
     const result = coroutines.complete(coroutine5)
 
+    await utils.randomDelay()
     await expect(result).rejects.toMatchObject({
       message: 'Oh no, I failed again with you! Pardon me...'
     })
@@ -98,6 +103,7 @@ it('should mix many coroutine behaviors', async () => {
       message: 'Coroutine is already running!'
     })
 
+    await utils.randomDelay()
     const input = await this.suspend(value * 2)
     return input + value
   })

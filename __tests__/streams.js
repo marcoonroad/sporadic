@@ -11,7 +11,6 @@ const {
 } = sporadic.streams
 
 // hack / workaround to drop unhandled promise rejection warning
-const ignorePromises = utils.ignorePromises
 const extractValue = utils.extractValue
 const extractNext = utils.extractNext
 
@@ -40,7 +39,7 @@ it('should open & push streams', async () => {
 })
 
 it('should open, push & pull streams', async () => {
-  expect.assertions(8)
+  expect.assertions(18)
 
   const producer0 = await open()
   const consumer0 = producer0
@@ -56,6 +55,17 @@ it('should open, push & pull streams', async () => {
   const result2 = await pull(result1.next)
   const result3 = await pull(result2.next)
   const result4 = await pull(result3.next)
+
+  expect(producer0).not.toBe(producer1)
+  expect(producer0).not.toBe(producer2)
+  expect(producer0).not.toBe(producer3)
+  expect(producer0).not.toBe(producer4)
+  expect(producer1).not.toBe(producer2)
+  expect(producer1).not.toBe(producer3)
+  expect(producer1).not.toBe(producer4)
+  expect(producer2).not.toBe(producer3)
+  expect(producer2).not.toBe(producer4)
+  expect(producer3).not.toBe(producer4)
 
   expect(result1.next).toBe(producer1)
   expect(result2.next).toBe(producer2)
@@ -93,8 +103,6 @@ it('should open, push, pull & close streams', async () => {
   await expect(promise4).rejects.toMatchObject({ message: 'Stream is closed!' })
   await expect(promise5).rejects.toMatchObject({ message: 'Stream is closed!' })
   await expect(promise6).rejects.toMatchObject({ message: 'Stream is closed!' })
-
-  ignorePromises([ promise2, promise3, promise4, promise5, promise6 ])
 })
 
 it('should replay the pull for the same stream point', async () => {

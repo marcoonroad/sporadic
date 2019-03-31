@@ -2,7 +2,9 @@
 
 'use strict'
 
-const sporadic = require('../support').sporadic
+const support = require('../support')
+const sporadic = support.sporadic
+const randomDelay = support.utils.randomDelay
 
 const {
   open, send, receive, close, closed
@@ -87,45 +89,47 @@ it('should send and receive over open channels', async () => {
   await expect(closed(channel)).resolves.toBe(true)
 })
 
-const random = (since, until) =>
-  Math.ceil((Math.random() * (until - since)) + since)
-
-const randomDelay = () =>
-  new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve(true)
-    }, random(50, 100))
-  })
-
 it('should use channels for communication', async () => {
-  expect.assertions(5)
+  expect.assertions(3)
 
   const channel = await open()
 
   const producer = (async (channel) => {
+    const feedbacks = []
+
     await randomDelay()
+    feedbacks.push(await send(channel, 'hello'))
 
-    await send(channel, 'hello')
-    await send(channel, 'world')
-    await send(channel, 'byebye')
+    await randomDelay()
+    feedbacks.push(await send(channel, 'world'))
 
+    await randomDelay()
+    feedbacks.push(await send(channel, 'byebye'))
+
+    expect(feedbacks).toEqual([ true, true, true ])
+
+    await randomDelay()
     return 'produced!'
   })(channel)
 
   const consumer = (async (channel) => {
+    const results = []
+
     await randomDelay()
+    results.push(await receive(channel))
 
-    const first = await receive(channel)
-    const second = await receive(channel)
-    const third = await receive(channel)
+    await randomDelay()
+    results.push(await receive(channel))
 
-    expect(first).toBe('hello')
-    expect(second).toBe('world')
-    expect(third).toBe('byebye')
+    await randomDelay()
+    results.push(await receive(channel))
 
+    expect(results).toEqual([ 'hello', 'world', 'byebye' ])
+
+    await randomDelay()
     return 'consumed!'
   })(channel)
 
-  await expect(producer).resolves.toBe('produced!')
-  await expect(consumer).resolves.toBe('consumed!')
+  const tasks = Promise.all([ producer, consumer ])
+  await expect(tasks).resolves.toEqual([ 'produced!', 'consumed!' ])
 })

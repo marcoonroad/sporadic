@@ -3,7 +3,6 @@
 'use strict'
 
 const preload = function () {
-  let sporadic = null
   const LIB_DIR = process.env.LIB_DIR || 'src/sporadic'
 
   if (process.env.BROWSER_ENV) {
@@ -26,11 +25,9 @@ const preload = function () {
       resources: 'usable'
     })
     return dom.window.sporadic
-  } else {
-    sporadic = require(`../${LIB_DIR}`)
   }
 
-  return sporadic
+  return require(`../${LIB_DIR}`)
 }
 
 module.exports.sporadic = preload()
