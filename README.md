@@ -8,6 +8,7 @@ Composable Concurrency Abstractions for JavaScript.
 <img src="https://img.shields.io/coveralls/github/marcoonroad/sporadic.svg?style=flat-square"/></a>
 <a href="https://www.npmjs.com/package/sporadic"><img src="https://img.shields.io/npm/dw/sporadic.svg?style=flat-square&logo=npm"/></a>
 <a href="https://github.com/marcoonroad/sporadic/blob/master/LICENSE"><img src="https://img.shields.io/github/license/marcoonroad/sporadic.svg?style=flat-square&logo=github"/></a>
+<a href="https://app.fossa.io/projects/git%2Bgithub.com%2Fmarcoonroad%2Fsporadic?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmarcoonroad%2Fsporadic.svg?type=shield"/></a>
 
 ---
 
@@ -93,3 +94,7 @@ Currently, the following abstractions are implemented:
 
 PRs & Issues are always welcome :house:! Feel free to open one :v:!
 Happy hacking :computer:!
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmarcoonroad%2Fsporadic.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmarcoonroad%2Fsporadic?ref=badge_large)
