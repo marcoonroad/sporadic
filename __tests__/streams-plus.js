@@ -7,7 +7,7 @@ const sporadic = support.sporadic
 const utils = support.utils
 
 const {
-  every, close, push, open, react, map, pull, filter
+  every, close, push, open, react, map, pull, filter, merge
 } = sporadic.streams
 
 // hack / workaround to drop unhandled promise rejection warning
@@ -240,4 +240,33 @@ it('should ignore sent values from origin if filtered is close', async () => {
   await expect(value).rejects.toMatchObject(closedErrorObject)
 
   await expect(close(producer)).rejects.toMatchObject(closedErrorObject)
+})
+
+it('should merge streams', async () => {
+  expect.assertions(4)
+
+  const first = await open()
+  const second = await open()
+  const merged = await merge(first, second)
+
+  await push(first, 15)
+  await push(second, 26)
+  await push(second, 12)
+  await push(first, 38)
+  await push(second, 7)
+  await push(first, 89)
+  await push(first, 1)
+
+  const expected = [15, 26, 12, 38, 7, 89, 1]
+  const current = []
+
+  react(merged, current.push.bind(current))
+
+  // merged stream is closed after both input streams are closed beforehand
+  await expect(close(first)).rejects.toMatchObject(closedErrorObject)
+  await expect(close(second)).rejects.toMatchObject(closedErrorObject)
+  await expect(push(merged, true)).rejects.toMatchObject(closedErrorObject)
+
+  // test signals after every folk is closed
+  expect(current).toEqual(expected)
 })

@@ -156,13 +156,33 @@ ignored for both closed result streams.
 
 ---
 
+To merge two streams in a non-deterministic way, use the `merge` operation:
+
+```javascript
+const leftStream = await sporadicStreams.open()
+const rightStream = await sporadicStreams.open()
+const mergedStream = await sporadicStreams.merge(leftStream, rightStream)
+
+// ...
+```
+
+Here, `mergedStream` will contain all the values/events from both `leftStream` and
+`rightStream` (in an unpredictable order, clearly). The `mergedStream` is automatically
+closed when both input streams are closed beforehand (but nothing prevents us from closing
+that thing manually). Pay attention that the `merge` operation only listen from events since
+this actual stream point onwards. That is, past events are lost - this is a property of stream
+points as a whole for every client coming up with an already ongoing stream point. You can
+persist the whole thing by using the initial stream point here, tho.
+
+---
+
 To import all operations on the current scope, you can use the following
 pattern (from modern JS):
 
 ```javascript
 const {
   open, push, close, pull,
-  every, map, filter
+  every, map, filter, merge
 } = require('sporadic').streams
 ```
 

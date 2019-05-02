@@ -124,7 +124,8 @@ const react = async (stream, procedure) => {
       currentStream = result.next
 
       try {
-        procedure(result.current)
+        // forces promise resolution if procedure is async
+        await procedure(result.current)
       } catch (reason) {
         deferred.reject(reason)
         throw reason // next catch won't resolve deferred, resolve is ignored
@@ -185,6 +186,24 @@ const map = async (stream, closure) => {
   return transformed // we still return the original / first stream point
 }
 
+const merge = async (leftStream, rightStream) => {
+  const mergedStream = await open()
+  let stepStream = mergedStream
+
+  const redirect = async signal => {
+    stepStream = await push(stepStream, signal)
+  }
+
+  const closedLeft = react(leftStream, redirect)
+  const closedRight = react(rightStream, redirect)
+
+  Promise.all([closedLeft, closedRight]).then(() => {
+    close(stepStream)
+  })
+
+  return mergedStream
+}
+
 module.exports.open = open
 module.exports.push = push
 module.exports.pull = pull
@@ -193,3 +212,4 @@ module.exports.react = react
 module.exports.filter = filter
 module.exports.map = map
 module.exports.every = every
+module.exports.merge = merge
