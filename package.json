@@ -1,6 +1,6 @@
 {
   "name": "sporadic",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Composable Concurrency Abstractions for JavaScript.",
   "main": "build/sporadic/index.js",
   "browser": "dist/index.js",
