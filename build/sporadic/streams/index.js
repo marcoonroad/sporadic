@@ -1,27 +1,27 @@
-/* eslint-env node, es6 */'use strict';const utils=require('../utils');const error=()=>Error('Stream is closed!');// needed to perform asynchronous recursion, see function below
-let create=null;create=finalizer=>{const{promise,resolve,reject}=utils.defer();const broken=false;const produced=false;const next=promise.then(()=>create(finalizer));const stream={current:promise,next,resolve,reject,produced,broken,finalizer};return stream};// unit -> stream promise
+/* eslint-env node, es6 */'use strict';function _asyncToGenerator(fn){return function(){var gen=fn.apply(this,arguments);return new Promise(function(resolve,reject){function step(key,arg){try{var info=gen[key](arg);var value=info.value}catch(error){reject(error);return}if(info.done){resolve(value)}else{return Promise.resolve(value).then(function(value){step('next',value)},function(err){step('throw',err)})}}return step('next')})}}const utils=require('../utils');const error=()=>Error('Stream is closed!');// needed to perform asynchronous recursion, see function below
+let create=null;create=finalizer=>{var _utils$defer=utils.defer();const promise=_utils$defer.promise,resolve=_utils$defer.resolve,reject=_utils$defer.reject;const broken=false;const produced=false;const next=promise.then(()=>create(finalizer));const stream={current:promise,next,resolve,reject,produced,broken,finalizer};return stream};// unit -> stream promise
 const open=finalizer=>utils.resolved(create(finalizer));// stream -> (value * stream) promise
 // may throws reason
-const pull=async stream=>{const current=await stream.current;const next=await stream.next;return{current,next}};const available=async stream=>{let point=stream;while(point.produced&&!point.broken){point=await point.next}return{point}};// stream * value -> stream promise
-const push=async(stream,value)=>{const{point}=await available(stream);point.resolve(value);point.produced=true;const result=await point.next;// creates a new stream point/node
-return result};// stream * reason -> void promise
+const pull=(()=>{var _ref=_asyncToGenerator(function*(stream){const current=yield stream.current;const next=yield stream.next;return{current,next}});return function pull(_x){return _ref.apply(this,arguments)}})();const available=(()=>{var _ref2=_asyncToGenerator(function*(stream){let point=stream;while(point.produced&&!point.broken){point=yield point.next}return{point}});return function available(_x2){return _ref2.apply(this,arguments)}})();// stream * value -> stream promise
+const push=(()=>{var _ref3=_asyncToGenerator(function*(stream,value){var _ref4=yield available(stream);const point=_ref4.point;point.resolve(value);point.produced=true;const result=yield point.next;// creates a new stream point/node
+return result});return function push(_x3,_x4){return _ref3.apply(this,arguments)}})();// stream * reason -> void promise
 // never returns, throws reason
-const close=async stream=>{const{point}=await available(stream);if(point.broken){await point.next;// always fails
+const close=(()=>{var _ref5=_asyncToGenerator(function*(stream){var _ref6=yield available(stream);const point=_ref6.point;if(point.broken){yield point.next;// always fails
 }else{point.reject(error());point.produced=true;point.broken=true;try{if(point.finalizer){point.finalizer()}}catch(reason){// shallow/ignore error/reason
-}await point.next;// breaks as well
-}};const protectedClose=stream=>close(stream).catch(()=>{// shallow/ignore error/reason
+}yield point.next;// breaks as well
+}});return function close(_x5){return _ref5.apply(this,arguments)}})();const protectedClose=stream=>close(stream).catch(()=>{// shallow/ignore error/reason
 });const every=interval=>{let finalizer=null;const stream=create(()=>finalizer());let currentStream=stream;const intervalId=setInterval(()=>{push(currentStream,true).then(nextStream=>{currentStream=nextStream});// .catch() here is never reached :)
 },interval);finalizer=()=>{clearInterval(intervalId)};return utils.resolved(stream)};// stream * closure -> boolean promise
-const react=async(stream,procedure)=>{const deferred=utils.defer();let currentStream=stream;try{while(true){const result=await pull(currentStream);currentStream=result.next;try{// forces promise resolution if procedure is async
-await procedure(result.current)}catch(reason){deferred.reject(reason);throw reason;// next catch won't resolve deferred, resolve is ignored
-}}}catch(reason){deferred.resolve(true)}const isClosed=await deferred.promise;return isClosed};// stream * closure -> stream promise
-const filter=async(stream,predicate)=>{const filtered=create();let newStream=filtered;// alias to allow garbage collection here
-react(stream,value=>{// the call predicate(value) may fail
-try{if(predicate(value)){push(newStream,value).then(nextStream=>{newStream=nextStream}).catch(reason=>{protectedClose(newStream)})}}catch(reason){protectedClose(newStream)}}).then(()=>{protectedClose(newStream)});// .catch() is never reached here :p
+const react=(()=>{var _ref7=_asyncToGenerator(function*(stream,procedure){const deferred=utils.defer();let currentStream=stream;try{while(true){const result=yield pull(currentStream);currentStream=result.next;try{// forces promise resolution if procedure is async
+yield procedure(result.current)}catch(reason){deferred.reject(reason);throw reason;// next catch won't resolve deferred, resolve is ignored
+}}}catch(reason){deferred.resolve(true)}const isClosed=yield deferred.promise;return isClosed});return function react(_x6,_x7){return _ref7.apply(this,arguments)}})();// stream * closure -> stream promise
+const filter=(()=>{var _ref8=_asyncToGenerator(function*(stream,predicate){const filtered=create();let newStream=filtered;// alias to allow garbage collection here
+react(stream,function(value){// the call predicate(value) may fail
+try{if(predicate(value)){push(newStream,value).then(function(nextStream){newStream=nextStream}).catch(function(reason){protectedClose(newStream)})}}catch(reason){protectedClose(newStream)}}).then(function(){protectedClose(newStream)});// .catch() is never reached here :p
 return filtered;// we still return the original / first stream point
-};// stream * closure -> stream promise
-const map=async(stream,closure)=>{const transformed=create();let newStream=transformed;// alias to allow garbage collection here
-react(stream,value=>{try{push(newStream,closure(value)).then(nextStream=>{newStream=nextStream}).catch(reason=>{protectedClose(newStream)})}catch(reason){protectedClose(newStream)}}).then(()=>{protectedClose(newStream);// closes result stream if origin is closed too
+});return function filter(_x8,_x9){return _ref8.apply(this,arguments)}})();// stream * closure -> stream promise
+const map=(()=>{var _ref9=_asyncToGenerator(function*(stream,closure){const transformed=create();let newStream=transformed;// alias to allow garbage collection here
+react(stream,function(value){try{push(newStream,closure(value)).then(function(nextStream){newStream=nextStream}).catch(function(reason){protectedClose(newStream)})}catch(reason){protectedClose(newStream)}}).then(function(){protectedClose(newStream);// closes result stream if origin is closed too
 });// .catch() here is never reached :)
 return transformed;// we still return the original / first stream point
-};const merge=async(leftStream,rightStream)=>{const mergedStream=await open();let stepStream=mergedStream;const redirect=async signal=>{stepStream=await push(stepStream,signal)};const closedLeft=react(leftStream,redirect);const closedRight=react(rightStream,redirect);Promise.all([closedLeft,closedRight]).then(()=>{close(stepStream)});return mergedStream};module.exports.open=open;module.exports.push=push;module.exports.pull=pull;module.exports.close=close;module.exports.react=react;module.exports.filter=filter;module.exports.map=map;module.exports.every=every;module.exports.merge=merge;
+});return function map(_x10,_x11){return _ref9.apply(this,arguments)}})();const merge=(()=>{var _ref10=_asyncToGenerator(function*(leftStream,rightStream){const mergedStream=yield open();let stepStream=mergedStream;const redirect=(()=>{var _ref11=_asyncToGenerator(function*(signal){stepStream=yield push(stepStream,signal)});return function redirect(_x14){return _ref11.apply(this,arguments)}})();const closedLeft=react(leftStream,redirect);const closedRight=react(rightStream,redirect);Promise.all([closedLeft,closedRight]).then(function(){close(stepStream)});return mergedStream});return function merge(_x12,_x13){return _ref10.apply(this,arguments)}})();module.exports.open=open;module.exports.push=push;module.exports.pull=pull;module.exports.close=close;module.exports.react=react;module.exports.filter=filter;module.exports.map=map;module.exports.every=every;module.exports.merge=merge;
