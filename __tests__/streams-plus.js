@@ -243,28 +243,34 @@ it('should ignore sent values from origin if filtered is close', async () => {
 })
 
 it('should merge streams', async () => {
-  expect.assertions(4)
+  expect.assertions(5)
 
   const first = await open()
   const second = await open()
-  const merged = await merge(first, second)
+  let merged = await merge(first, second)
 
-  await push(first, 15)
-  await push(second, 26)
-  await push(second, 12)
-  await push(first, 38)
-  await push(second, 7)
-  await push(first, 89)
-  await push(first, 1)
-
-  const expected = [15, 26, 12, 38, 7, 89, 1]
+  const expected = [15, 26, 12, 38, 12, 7, 89, 1]
   const current = []
 
-  react(merged, current.push.bind(current))
+  const pickRandom = () => {
+    const side = Math.round(Math.random())
+    if (side < 1) {
+      return first
+    }
+    return second
+  }
+
+  for (let index = 0; index < expected.length; index += 1) {
+    const randomStream = pickRandom()
+    await push(randomStream, expected[index])
+    current.push(await extractValue(merged))
+    merged = await extractNext(merged)
+  }
 
   // merged stream is closed after both input streams are closed beforehand
   await expect(close(first)).rejects.toMatchObject(closedErrorObject)
   await expect(close(second)).rejects.toMatchObject(closedErrorObject)
+  await expect(pull(merged)).rejects.toMatchObject(closedErrorObject)
   await expect(push(merged, true)).rejects.toMatchObject(closedErrorObject)
 
   // test signals after every folk is closed

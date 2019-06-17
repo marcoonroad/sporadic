@@ -84,3 +84,4 @@ docs/.bundle
 docs/_site/
 
 TRASH/
+*.swp
