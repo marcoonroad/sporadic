@@ -197,9 +197,10 @@ const merge = async (leftStream, rightStream) => {
   const closedLeft = react(leftStream, redirect)
   const closedRight = react(rightStream, redirect)
 
-  Promise.all([closedLeft, closedRight]).then(async () => {
-    await close(stepStream)
-  })
+  Promise.all([ closedLeft, closedRight ])
+    .then(() => {
+      return (close(stepStream).catch(function () { }))
+    })
 
   return mergedStream
 }

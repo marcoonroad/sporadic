@@ -1,6 +1,14 @@
+const ignoreAll = (promises) => {
+  return promises.map(function (promise) {
+    return promise.catch(() => {
+      // juntos e SHALLOW NOW
+    })
+  })
+}
+
 // hack / workaround to drop unhandled promise rejection warning
 const ignorePromises = (promises) => {
-  return Promise.all(promises).catch(() => { })
+  return Promise.all(ignoreAll(promises))
 }
 
 const extractValue = async (stream) => {
