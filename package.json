@@ -23,6 +23,9 @@
     "jekyll:serve": "cd docs && bundle exec jekyll serve && cd ..",
     "prepublish": "yarn run build"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/@marcoonroad"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/marcoonroad/sporadic.git"
