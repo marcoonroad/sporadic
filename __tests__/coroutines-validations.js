@@ -17,6 +17,36 @@ it('should fail resume if coroutine is invalid', async () => {
   })
 })
 
+it('should fail on any coroutine operation if coroutine is invalid', async () => {
+  expect.assertions(3)
+
+  const invalidCoroutine = {}
+
+  try {
+    coroutines.status(invalidCoroutine)
+  } catch (reason) {
+    expect(reason).toMatchObject({
+      message: 'Expected a valid coroutine!'
+    })
+  }
+
+  try {
+    coroutines.supplies(invalidCoroutine)
+  } catch (reason) {
+    expect(reason).toMatchObject({
+      message: 'Expected a valid coroutine!'
+    })
+  }
+
+  try {
+    coroutines.demands(invalidCoroutine)
+  } catch (reason) {
+    expect(reason).toMatchObject({
+      message: 'Expected a valid coroutine!'
+    })
+  }
+})
+
 it('should fail suspend if coroutine is not active', async () => {
   expect.assertions(1)
 

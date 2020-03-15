@@ -32,6 +32,17 @@ const dispose = async coroutine => {
   return true
 }
 
+const validate = coroutine => {
+  if (
+    !coroutine || !coroutine.status || !coroutine.computation ||
+    !coroutine.demands || !coroutine.supplies || !coroutine.supply ||
+    !coroutine.demand || !coroutine.result ||
+    !(coroutine.result.promise instanceof Promise)
+  ) {
+    throw Error('Expected a valid coroutine!')
+  }
+}
+
 let create = null
 let suspend = null
 let resume = null
@@ -64,13 +75,7 @@ create = async computation => {
 }
 
 resume = async (coroutine, value) => {
-  if (
-    !coroutine || !coroutine.status || !coroutine.computation ||
-    !coroutine.demands || !coroutine.supplies || !coroutine.supply ||
-    !coroutine.demand || !coroutine.result
-  ) {
-    throw Error('Expected a valid coroutine!')
-  }
+  validate(coroutine)
 
   if (coroutine.status === State.RUNNING) {
     throw Error('Coroutine is already running!')
@@ -138,17 +143,25 @@ suspend = async (coroutine, value) => {
   return input
 }
 
-status = coroutine =>
-  PrintState[coroutine.status]
+status = coroutine => {
+  validate(coroutine)
+  return PrintState[coroutine.status]
+}
 
-demands = coroutine =>
-  coroutine.demands
+demands = coroutine => {
+  validate(coroutine)
+  return coroutine.demands
+}
 
-supplies = coroutine =>
-  coroutine.supplies
+supplies = coroutine => {
+  validate(coroutine)
+  return coroutine.supplies
+}
 
-complete = coroutine =>
-  coroutine.result.promise
+complete = coroutine => {
+  validate(coroutine)
+  return coroutine.result.promise
+}
 
 module.exports.create = create
 module.exports.resume = resume
