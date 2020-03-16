@@ -65,7 +65,7 @@
   "bugs": {
     "url": "https://github.com/marcoonroad/sporadic/issues"
   },
-  "homepage": "https://github.com/marcoonroad/sporadic#readme",
+  "homepage": "https://sporadic.marcoonroad.dev",
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-eslint": "^10.0.1",
