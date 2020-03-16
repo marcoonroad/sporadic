@@ -74,7 +74,7 @@ This constraint is implemented due buggy issues to not violate our invariants.
 
 To run a coroutine, we can use:
 
-```
+```javascript
 const output = await sporadic.coroutines.resume(coroutine, input)
 ```
 
@@ -131,8 +131,9 @@ _it can really hurt the application's memory consumption_.
 **To avoid that, you can configure the coroutine a priori**:
 
 ```javascript
-const coroutine = sporadic.coroutines.create(async function () {
+const coroutine = await sporadic.coroutines.create(async function (argument) {
   // ...
+  return result
 }, { streamsMode: 'COLLECT' })
 ```
 
