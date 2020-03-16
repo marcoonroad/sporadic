@@ -21,15 +21,63 @@ const PrintState = [
   'DEAD'
 ]
 
+const StreamsMode = {
+  PERSIST: 1,
+  COLLECT: 2,
+  DISABLE: 3
+}
+
 const dispose = async coroutine => {
   coroutine.computation = true
 
   await utils.ignorePromise(channels.close(coroutine.supply))
   await utils.ignorePromise(channels.close(coroutine.demand))
-  await utils.ignorePromise(streams.close(coroutine.demands))
-  await utils.ignorePromise(streams.close(coroutine.supplies))
+
+  if (coroutine.options.streamsMode !== StreamsMode.DISABLE) {
+    await utils.ignorePromise(streams.close(coroutine.demands))
+    await utils.ignorePromise(streams.close(coroutine.supplies))
+  }
 
   return true
+}
+
+const validateOptions = options => {
+  if (
+    !options ||
+    (options.streamsMode !== 'DISABLE' &&
+    options.streamsMode !== 'COLLECT' &&
+    options.streamsMode !== 'PERSIST' &&
+    options.streamsMode !== undefined &&
+    options.streamsMode !== null)
+  ) {
+    throw Error(`Invalid coroutine configuration options.streamsMode: ${options.streamsMode}`)
+  }
+}
+
+const validate = coroutine => {
+  const withoutStreams =
+    coroutine.options &&
+    coroutine.options.streamsMode === StreamsMode.DISABLE &&
+    !coroutine.supplies &&
+    !coroutine.demands
+  const configuredWithStreams =
+    coroutine.options &&
+    (coroutine.options.streamsMode === StreamsMode.PERSIST ||
+    coroutine.options.streamsMode === StreamsMode.COLLECT)
+  const withStreams =
+    configuredWithStreams &&
+    coroutine.supplies &&
+    coroutine.demands
+  const validStreams = withoutStreams || withStreams
+
+  if (
+    !coroutine || !coroutine.status || !coroutine.computation ||
+    !coroutine.supply || !coroutine.options || !coroutine.demand ||
+    !validStreams || !coroutine.result ||
+    !(coroutine.result.promise instanceof Promise)
+  ) {
+    throw Error('Expected a valid coroutine!')
+  }
 }
 
 let create = null
@@ -40,11 +88,21 @@ let demands = null
 let supplies = null
 let complete = null
 
-create = async computation => {
+create = async (computation, nullableOptions) => {
   const coroutine = {}
 
-  coroutine.supplies = await streams.open()
-  coroutine.demands = await streams.open()
+  const options = nullableOptions || {}
+  validateOptions(options)
+
+  options.streamsMode = options.streamsMode || 'PERSIST'
+  options.streamsMode = StreamsMode[options.streamsMode]
+
+  if (options.streamsMode !== StreamsMode.DISABLE) {
+    coroutine.supplies = await streams.open()
+    coroutine.demands = await streams.open()
+  }
+
+  coroutine.options = options
   coroutine.supply = await channels.open()
   coroutine.demand = await channels.open()
   coroutine.computation = computation
@@ -64,13 +122,7 @@ create = async computation => {
 }
 
 resume = async (coroutine, value) => {
-  if (
-    !coroutine || !coroutine.status || !coroutine.computation ||
-    !coroutine.demands || !coroutine.supplies || !coroutine.supply ||
-    !coroutine.demand || !coroutine.result
-  ) {
-    throw Error('Expected a valid coroutine!')
-  }
+  validate(coroutine)
 
   if (coroutine.status === State.RUNNING) {
     throw Error('Coroutine is already running!')
@@ -78,16 +130,28 @@ resume = async (coroutine, value) => {
     throw Error('Coroutine is dead!')
   }
 
-  await streams.push(coroutine.demands, value)
+  if (coroutine.options.streamsMode !== StreamsMode.DISABLE) {
+    const nextStream = await streams.push(coroutine.demands, value)
+
+    if (coroutine.options.streamsMode === StreamsMode.COLLECT) {
+      coroutine.demands = nextStream
+    }
+  }
 
   if (coroutine.status === State.CREATED) {
     coroutine.status = State.RUNNING
-    coroutine.computation(value).then(result => {
-      streams.push(coroutine.supplies, result).then(() => {
-        channels.send(coroutine.supply, {
-          value: result,
-          type: 'return'
-        })
+    coroutine.computation(value).then(async result => {
+      if (coroutine.options.streamsMode !== StreamsMode.DISABLE) {
+        const nextStream = await streams.push(coroutine.supplies, result)
+
+        if (coroutine.options.streamsMode === StreamsMode.COLLECT) {
+          coroutine.supplies = nextStream
+        }
+      }
+
+      channels.send(coroutine.supply, {
+        value: result,
+        type: 'return'
       })
       coroutine.result.resolve(result)
     }).catch(reason => {
@@ -131,24 +195,49 @@ suspend = async (coroutine, value) => {
     type: 'suspend'
   }
 
-  await streams.push(coroutine.supplies, value)
+  if (coroutine.options.streamsMode !== StreamsMode.DISABLE) {
+    const nextStream = await streams.push(coroutine.supplies, value)
+
+    if (coroutine.options.streamsMode === StreamsMode.COLLECT) {
+      coroutine.supplies = nextStream
+    }
+  }
+
   await channels.send(coroutine.supply, output)
 
   const input = await channels.receive(coroutine.demand)
   return input
 }
 
-status = coroutine =>
-  PrintState[coroutine.status]
+status = coroutine => {
+  validate(coroutine)
+  return PrintState[coroutine.status]
+}
 
-demands = coroutine =>
-  coroutine.demands
+demands = coroutine => {
+  validate(coroutine)
 
-supplies = coroutine =>
-  coroutine.supplies
+  if (coroutine.options.streamsMode === StreamsMode.DISABLE) {
+    throw Error('Coroutine created without supplies/demands streams!')
+  }
 
-complete = coroutine =>
-  coroutine.result.promise
+  return coroutine.demands
+}
+
+supplies = coroutine => {
+  validate(coroutine)
+
+  if (coroutine.options.streamsMode === StreamsMode.DISABLE) {
+    throw Error('Coroutine created without supplies/demands streams!')
+  }
+
+  return coroutine.supplies
+}
+
+complete = coroutine => {
+  validate(coroutine)
+  return coroutine.result.promise
+}
 
 module.exports.create = create
 module.exports.resume = resume

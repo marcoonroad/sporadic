@@ -48,6 +48,74 @@ it('should listen for coroutine supplies & demands', async () => {
   expect(currentSupplies).toEqual(expectedSupplies)
 })
 
+it('should move stream points on options.streamsMode=COLLECT', async () => {
+  expect.assertions(12)
+
+  let coroutine = null
+  coroutine = await coroutines.create(async function (initialCounter) {
+    let counter = initialCounter
+
+    const suppliesA = this.supplies()
+    const demandsA = this.demands()
+
+    counter += 1
+    counter += await this.suspend(counter)
+
+    const suppliesB = this.supplies()
+    const demandsB = this.demands()
+
+    counter = counter * 2
+    counter = counter - (await this.suspend(counter))
+
+    const suppliesC = this.supplies()
+    const demandsC = this.demands()
+
+    return {
+      counter,
+      suppliesA,
+      suppliesB,
+      suppliesC,
+      demandsA,
+      demandsB,
+      demandsC
+    }
+  }, { streamsMode: 'COLLECT' })
+
+  const supplies1 = coroutines.supplies(coroutine)
+  const demands1 = coroutines.demands(coroutine)
+  const result1 = await coroutines.resume(coroutine, 15)
+  expect(result1).toBe(16)
+
+  const supplies2 = coroutines.supplies(coroutine)
+  const demands2 = coroutines.demands(coroutine)
+  const result2 = await coroutines.resume(coroutine, 4)
+  expect(result2).toBe(40)
+
+  const supplies3 = coroutines.supplies(coroutine)
+  const demands3 = coroutines.demands(coroutine)
+  const {
+    counter,
+    suppliesA,
+    suppliesB,
+    suppliesC,
+    demandsA,
+    demandsB,
+    demandsC
+  } = await coroutines.resume(coroutine, 37)
+  expect(counter).toBe(3)
+  const demands4 = coroutines.demands(coroutine)
+
+  expect(supplies1).toBe(suppliesA)
+  expect(supplies2).toBe(suppliesB)
+  expect(supplies3).toBe(suppliesC)
+  expect(demands1).not.toBe(demandsA)
+  expect(demands2).not.toBe(demandsB)
+  expect(demands3).not.toBe(demandsC)
+  expect(demands2).toBe(demandsA)
+  expect(demands3).toBe(demandsB)
+  expect(demands4).toBe(demandsC)
+})
+
 it('should mix many coroutine behaviors', async () => {
   expect.assertions(14)
 

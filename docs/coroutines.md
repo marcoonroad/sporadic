@@ -74,7 +74,7 @@ This constraint is implemented due buggy issues to not violate our invariants.
 
 To run a coroutine, we can use:
 
-```
+```javascript
 const output = await sporadic.coroutines.resume(coroutine, input)
 ```
 
@@ -122,7 +122,31 @@ sporadic.coroutines.supplies(coroutine) = this.supplies()
 ```
 
 They are the same stream if the underlying computations are the same, so using the
-`sporadic.streams` API on any of them doesn't make any difference at all.
+`sporadic.streams` API on any of them doesn't make any difference at all. Due such
+equality, _this coroutine configuration may leak/hug memory_, 'cause in the sporadic's
+streams model, it's needed to discard unused previous stream points references. This
+whole stream points persistence is not a problem if your coroutines are short-lived
+tasks, but if they're long-lived ones, such as database connection pools,
+_it can really hurt the application's memory consumption_.
+**To avoid that, you can configure the coroutine a priori**:
+
+```javascript
+const coroutine = await sporadic.coroutines.create(async function (argument) {
+  // ...
+  return result
+}, { streamsMode: 'COLLECT' })
+```
+
+This `streamsMode` option will move the stream points forward whenever they're used.
+To not lost any events (that is, _glitches_), in such case, you can call `.supplies()`
+and `.demands()` _early_ (i.e, before the first `.resume()` call),
+_but don't forget to move your unnecessary stream points forward as well_.
+If you want to disable the `.supplies()` and `.demands()` streams entirely for the
+coroutine, you can use `{ streamsMode: 'DISABLE' }`. With this `'DISABLE'` configuration,
+no streams are ever created/allocated, and whenever `.supplies()` and `.demands()` are
+called on this coroutine, an error is thrown describing that streams were not created
+for such coroutine. The default value for `streamsMode` option is `'PERSIST'`, where
+all streams points are persisted during coroutine's lifetime.
 
 ---
 

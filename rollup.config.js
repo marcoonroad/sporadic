@@ -13,8 +13,9 @@ module.exports = {
   },
   plugins: [
     nodeResolve({
-      module: true,
-      main: true,
+      // module: true, // DEPRECATED
+      // main: true, // DEPRECATED
+      mainFields: ['module', 'main'], // NEW VERSION
       browser: true
     }),
     commonjs({
