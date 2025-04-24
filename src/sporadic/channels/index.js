@@ -1,5 +1,7 @@
 /* eslint-env node, es6 */
 
+// @ts-check
+
 'use strict'
 
 const utils = require('../utils')

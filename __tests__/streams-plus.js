@@ -1,5 +1,7 @@
 /* eslint-env jest, es6, node */
 
+// @ts-check
+
 'use strict'
 
 const support = require('../support')

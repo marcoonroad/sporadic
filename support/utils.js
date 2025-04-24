@@ -1,3 +1,9 @@
+/* eslint-env node, es6, jest */
+
+// @ts-check
+
+'use strict'
+
 const ignoreAll = (promises) => {
   return promises.map(function (promise) {
     return promise.catch(() => {

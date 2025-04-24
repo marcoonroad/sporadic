@@ -1,5 +1,7 @@
 /* eslint-env node, es6, jest */
 
+// @ts-check
+
 'use strict'
 
 const { sporadic } = require('../support')
@@ -50,7 +52,7 @@ it('should fail on any coroutine operation if coroutine is invalid', async () =>
 it('should fail suspend if coroutine is not active', async () => {
   expect.assertions(1)
 
-  let suspend = null
+  let suspend = value => new Promise((resolve, reject) => { })
   const coroutine = await coroutines.create(async function () {
     suspend = this.suspend
 
@@ -61,9 +63,11 @@ it('should fail suspend if coroutine is not active', async () => {
 
   await coroutines.resume(coroutine)
 
-  await expect(suspend(12)).rejects.toMatchObject({
-    message: 'Expected an active coroutine to yield from!'
-  })
+  if (suspend instanceof Function) {
+    await expect(suspend(12)).rejects.toMatchObject({
+      message: 'Expected an active coroutine to yield from!'
+    })
+  }
 })
 
 it('should fail on coroutines without supplies/demands streams', async () => {
