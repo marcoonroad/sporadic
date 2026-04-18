@@ -7,6 +7,15 @@
 /**
  * @function
  * @template T
+ * @param {T} _value
+ * @returns
+ */
+const ignoreValue = _value => { }
+
+
+/**
+ * @function
+ * @template T
  * @param {() => T | void | Promise<T> | Promise<void>} block
  * @returns {Promise<T | void | null>}
  */
@@ -79,7 +88,10 @@ const timeout = (seconds) => {
  * @returns {SporadicDeferred<T>}
  */
 const defer = () => {
-  const internal = {}
+  const internal = {
+    resolve: ignoreValue,
+    reject: ignoreValue,
+  }
   const result = {}
 
   result.changed = false
@@ -90,6 +102,12 @@ const defer = () => {
     internal.reject = reject
   })
 
+  /**
+   * @function
+   * @template T
+   * @param {T} value
+   * @returns
+   */
   result.resolve = (value) => {
     if (result.changed) {
       return
@@ -99,6 +117,12 @@ const defer = () => {
     internal.resolve(value)
   }
 
+  /**
+   * @function
+   * @template T
+   * @param {T} reason
+   * @returns
+   */
   result.reject = (reason) => {
     if (result.changed) {
       return

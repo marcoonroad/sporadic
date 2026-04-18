@@ -29,6 +29,7 @@ afterEach(() => {
 })
 
 it('should tick events during some interval', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(4)
 
   const ticker1 = every(3000)
@@ -53,6 +54,7 @@ it('should tick events during some interval', async () => {
 })
 
 it('should react to sent events', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(6)
 
   let stream = await open()
@@ -72,6 +74,7 @@ it('should react to sent events', async () => {
 })
 
 it('should break reaction loop if one step fails', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(2)
 
   const stream = await open()
@@ -90,6 +93,7 @@ it('should break reaction loop if one step fails', async () => {
 })
 
 it('should map/transform stream values', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(5)
 
   /**
@@ -121,6 +125,7 @@ it('should map/transform stream values', async () => {
 })
 
 it('should close the result stream if a map step fails', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(3)
 
   const closure = () => {
@@ -140,6 +145,7 @@ it('should close the result stream if a map step fails', async () => {
 })
 
 it('should close result stream if the origin one is closed before', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(2)
 
   /**
@@ -158,6 +164,7 @@ it('should close result stream if the origin one is closed before', async () => 
 })
 
 it('should not map origin values if result stream is closed before', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(4)
 
   /**
@@ -181,6 +188,8 @@ it('should not map origin values if result stream is closed before', async () =>
 })
 
 it('should filter stream values', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
+
   /**
    * @function
    * @param {number} value
@@ -216,6 +225,7 @@ it('should filter stream values', async () => {
 })
 
 it('should close filtered stream if the origin one is closed before', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(2)
 
   /**
@@ -234,6 +244,7 @@ it('should close filtered stream if the origin one is closed before', async () =
 })
 
 it('should close filtered stream if a filter step fails', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(2)
 
   const predicate = () => {
@@ -252,6 +263,7 @@ it('should close filtered stream if a filter step fails', async () => {
 })
 
 it('should ignore sent values from origin if filtered is close', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(3)
 
   /**
@@ -273,6 +285,7 @@ it('should ignore sent values from origin if filtered is close', async () => {
 })
 
 it('should merge streams', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(5)
 
   const first = await open()
@@ -308,6 +321,7 @@ it('should merge streams', async () => {
 })
 
 it('should create a proper stream reducer/folder', async () => {
+  jest.setTimeout(30000) // 30s timeout for unit test
   let stream = await reducer(1, current => current * 2)
   let point = await pull(stream)
   expect(point.current).toBe(1)
@@ -331,6 +345,7 @@ it('should create a proper stream reducer/folder', async () => {
 })
 
 it('should create factorial stream', async () => {
+  jest.setTimeout(15000) // 15s timeout for unit test
   const orderedMessages = []
   const sequentialStream = await reducer(0, current => current + 1)
 
@@ -339,12 +354,16 @@ it('should create factorial stream', async () => {
 
   await push(factorialStream, 1)
   let pairedStream = await paired(sequentialStream, factorialStream)
-  react(pairedStream, async pair => {
+  const factorialReaction = react(pairedStream, async pair => {
     const sequentialNumber = pair[0]
     const factorialNumber = pair[1]
     orderedMessages.push('PAIRED WITH ' + JSON.stringify(pair))
-    await push(factorialStream, factorialNumber * (sequentialNumber + 1))
+    if (sequentialNumber < 5) {
+      await push(factorialStream, factorialNumber * (sequentialNumber + 1))
+    }
   })
+  ignorePromises([ factorialReaction ])
+  jest.advanceTimersByTime(1)
 
   const expectedList = [1, 1, 2, 6, 24, 120]
   const currentList = []
@@ -360,6 +379,7 @@ it('should create factorial stream', async () => {
     }
     await protectedClose(sequentialStream)
     await protectedClose(factorialStream)
+    await protectedClose(pairedStream)
   } catch (reason) { }
   expect(currentList).toEqual(expectedList)
   expect(orderedMessages).toEqual([

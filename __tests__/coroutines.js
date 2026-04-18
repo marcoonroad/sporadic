@@ -23,6 +23,8 @@ it('should be able to create a coroutine', async () => {
 it('should be able to resume & suspend a coroutine', async () => {
   expect.assertions(10)
 
+  /** @type {import('../types/sporadic').Coroutine} */
+  // @ts-ignore
   let coroutine = null
   coroutine = await create(async function (number) {
     expect(number).toBe(12)

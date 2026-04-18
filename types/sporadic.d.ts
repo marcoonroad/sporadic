@@ -25,6 +25,17 @@ export type SporadicStreamPullStep<T> = Promise<{
 
 export type GenericStreamPullStep<T> = Promise<SporadicStream<T>> | SporadicStreamPullStep<T> | SporadicStream<T>
 
+export interface Coroutine {
+  suspend: (value: any) => Promise<any>;
+  status: (coroutine?: Coroutine) => Promise<"RUNNING">;
+  supplies: (coroutine?: Coroutine) => SporadicStream<any>;
+  demands: (coroutine?: Coroutine) => SporadicStream<any>;
+}
+
+export interface SporadicChannel<T> {
+
+}
+
 export interface SporadicModule {
   streams: {
     open: <T>() => Promise<SporadicStream<T>>;
@@ -41,12 +52,23 @@ export interface SporadicModule {
     map: <T, U>(stream: SporadicStream<T>, callback: (value: T) => U) => SporadicStream<U>;
     merge: <T, U>(left: SporadicStream<T>, right: SporadicStream<U>) => SporadicStream<T | U>;
     paired: <T, U>(left: SporadicStream<T>, right: SporadicStream<U>) => SporadicStream<[ T, U ]>;
-    
+
   };
   channels: {
+    open: <T>() => Promise<SporadicChannel<T>>;
+    send: <T>(channel: SporadicChannel<T>, value: T) => Promise;
+    receive: <T>(channel: SporadicChannel<T>) => Promise<T>;
+    close: <T>(channel: SporadicChannel<T>) => Promise;
+    closed: <T>(channel: SporadicChannel<T>) => Promise<boolean>;
 
   };
   coroutines: {
+    resume: (coroutine: Coroutine, argument?: any) => Promise<any>;
+    status: (coroutine: Coroutine) => Promise<"RUNNING" | "SUSPENDED">;
+    create: (callback: (this: Coroutine, ...arguments: any[]) => any, options?: { streamsMode?: "DISABLE" }) => Coroutine;
+    supplies: (coroutine: Coroutine) => SporadicStream<any>;
+    demands: (coroutine: Coroutine) => SporadicStream<any>;
+    complete: (coroutine: Coroutine) => Promise<any>;
 
   };
   actors: {

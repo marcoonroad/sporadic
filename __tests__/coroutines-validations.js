@@ -11,6 +11,8 @@ const { coroutines } = sporadic
 it('should fail resume if coroutine is invalid', async () => {
   expect.assertions(1)
 
+  /** @type {import('../types/sporadic').Coroutine} */
+  // @ts-ignore
   const invalidCoroutine = {}
   const supply = coroutines.resume(invalidCoroutine, 12)
 
@@ -22,6 +24,8 @@ it('should fail resume if coroutine is invalid', async () => {
 it('should fail on any coroutine operation if coroutine is invalid', async () => {
   expect.assertions(3)
 
+  /** @type {import('../types/sporadic').Coroutine} */
+  // @ts-ignore
   const invalidCoroutine = {}
 
   try {
@@ -52,6 +56,11 @@ it('should fail on any coroutine operation if coroutine is invalid', async () =>
 it('should fail suspend if coroutine is not active', async () => {
   expect.assertions(1)
 
+  /**
+   * @function
+   * @param {any} value
+   * @returns {Promise<any>}
+   */
   let suspend = value => new Promise((resolve, reject) => { })
   const coroutine = await coroutines.create(async function () {
     suspend = this.suspend
@@ -138,6 +147,8 @@ it('should fail on invalid coroutine configuration', async () => {
 
   const result = coroutines.create(async function () {
     return 'HEY'
+
+    // @ts-ignore
   }, { streamsMode: 'INVALID-MODE' })
 
   await expect(result).rejects.toMatchObject({

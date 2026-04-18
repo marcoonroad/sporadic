@@ -5,6 +5,7 @@
 'use strict'
 
 const tasks = require('../tasks')
+const channels = require('../channels')
 
 const error = () => Error('Stream is closed!')
 
@@ -20,30 +21,59 @@ const error = () => Error('Stream is closed!')
  * @property {((value: T) => T) | null} stepper
  * @property {T | null} pastValue
  * @property {(() => void) | null} finalizer
+ *  property {undefined | null | Promise<SporadicStream<T>>} next
+ *  property {undefined | null | SporadicStream<T>} nextPoint
+ *  property {undefined | null | ((value: SporadicStream<T>) => void)} resolveNext
+ *  property {undefined | null | ((reason: any) => void)} rejectNext
  */
 
 // needed to perform asynchronous recursion, see function below
 
+/*
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @returns
+ */
+/*
+const ensureNext = stream => {
+  if (!stream.nextPoint) {
+    stream.nextPoint = createStream(stream.finalizer, stream.stepper, stream.pastValue, false)
+    // stream.resolveNext(stream.nextPoint)
+  }
+
+  return stream.nextPoint
+}
+*/
+
 /**
  * @function
  * @template T
- * @param {*} finalizer
- * @param {*} stepper
- * @param {*} pastValue
- * @param {*} isFirstNode
+ * @param {null | (() => void)} finalizer
+ * @param {null | ((value: T) => T)} stepper
+ * @param {null | T} pastValue
+ * @param {boolean} isFirstNode
  * @returns {SporadicStream<T>}
  */
 function createStream (finalizer = null, stepper = null, pastValue = null, isFirstNode = false) {
   const { promise, resolve, reject } = tasks.defer()
+  // stepper = stepper || (value => value)
 
   const broken = false
   const produced = false
   const next = promise.then(pastValue => createStream(finalizer, stepper, pastValue, false))
+  // const nextDeferred = tasks.defer()
 
   /** @type {SporadicStream<T>} */
   const stream = {
     current: promise,
     next,
+    // next: nextDeferred.promise,
+    // nextPoint: null,
+    // resolveNext: null,
+    // rejectNext: null,
+    // resolveNext: nextDeferred.resolve,
+    // rejectNext: nextDeferred.reject,
     resolve,
     reject,
     produced,
@@ -56,6 +86,7 @@ function createStream (finalizer = null, stepper = null, pastValue = null, isFir
   if (pastValue !== null && pastValue !== undefined && isFirstNode) {
     stream.resolve(pastValue)
     stream.produced = true
+    // ensureNext(stream)
   }
 
   return stream
@@ -93,14 +124,21 @@ const pull = async stream => {
       const stepperWrapper = async () =>
         stream.stepper && stream.pastValue !== null && stream.pastValue !== undefined ? stream.stepper(stream.pastValue) : null
       const stepResult = await stepperWrapper()
-      if (stepResult) {
+      // if (stepResult) {
+      if (stepResult !== null && stepResult !== undefined) {
+        // stream.pastValue = stepResult
         stream.resolve(stepResult)
         stream.produced = true
+        // ensureNext(stream)
         stream.stepper = null
         stream.pastValue = null
       }
     } catch (reason) {
+      // NOTE: shallow/ignore error/reason
+      // stream.current.catch(() => { })
+      // stream.next.catch(() => { })
       stream.reject(reason)
+      // stream.rejectNext(reason)
       stream.broken = true
       stream.stepper = null
       stream.pastValue = null
@@ -108,6 +146,7 @@ const pull = async stream => {
   }
   const current = await stream.current
   const next = await stream.next
+  // const next = stream.nextPoint || ensureNext(stream)
 
   return {
     current,
@@ -141,12 +180,14 @@ const available = async stream => {
 const push = async (stream, value) => {
   const { point } = await available(stream)
 
+  // point.pastValue = value
   point.resolve(value)
   point.produced = true
 
   const result = await point.next // creates a new stream point/node
 
   return result
+  // return ensureNext(point)
 }
 
 /**
@@ -163,7 +204,12 @@ const close = async stream => {
   if (point.broken) {
     await point.next // always fails
   } else {
+    // const reason = error()
+    // NOTE: shallow/ignore error/reason
+    // point.current.catch(() => { })
+    // point.next.catch(() => { })
     point.reject(error())
+    // point.rejectNext(reason)
     point.produced = true
     point.broken = true
     point.stepper = null
@@ -206,9 +252,17 @@ const every = (interval) => {
   let currentStream = stream
 
   const intervalId = setInterval(() => {
-    push(currentStream, true).then(nextStream => {
-      currentStream = nextStream
-    }) // .catch() here is never reached :)
+    // if (!currentStream.produced && !currentStream.broken) {
+      tasks.ignore(
+        push(currentStream, true).then(nextStream => {
+          currentStream = nextStream
+        }) // .catch() here is never reached :)
+      )
+      // currentStream.pastValue = true
+      // currentStream.resolve(true)
+      // currentStream.produced = true
+      // currentStream = ensureNext(currentStream)
+    // }
   }, interval)
 
   finalizer = () => {
@@ -241,6 +295,8 @@ const react = async (stream, procedure) => {
         // forces promise resolution if procedure is async
         const procedureWrapper = async () => procedure(result.current)
         await procedureWrapper()
+        // NOTE: a simple yield/suspend codepoint below
+        // await Promise.resolve()
       } catch (reason) {
         deferred.reject(reason)
         throw reason // next catch won't resolve deferred, resolve is ignored
@@ -327,24 +383,77 @@ const paired = async (leftStream, rightStream) => {
   let pairedStream = outputStream
   let leftStreamPoint = leftStream
   let rightStreamPoint = rightStream
-  react(leftStreamPoint, async leftValue => {
+
+  let bufferLeftChannel = await channels.open()
+  let bufferRightChannel = await channels.open()
+
+  react(leftStreamPoint, async leftStreamSignal => {
+    await channels.send(bufferLeftChannel, leftStreamSignal)
+  })
+  react(rightStreamPoint, async rightStreamSignal => {
+    await channels.send(bufferRightChannel, rightStreamSignal)
+  })
+  tasks.spawn(async () => {
     try {
-      const rightStreamNode = await pull(rightStreamPoint)
-      rightStreamPoint = rightStreamNode.next
-      pairedStream = await push(pairedStream, [ leftValue, rightStreamNode.current ])
-    } catch (reason) {
+      while (true) {
+        const [ leftValue, rightValue ] = await Promise.all([
+          channels.receive(bufferLeftChannel),
+          channels.receive(bufferRightChannel)
+        ])
+        // if (leftValue === null || leftValue === undefined) return;
+        // if (rightValue === null || rightValue === undefined) return;
+        pairedStream = await push(pairedStream, [ leftValue, rightValue ])
+      }
+    }
+    catch (reason) {
+      // NOTE: we close intermediary channel layers and the final paired stream
+      await channels.close(bufferLeftChannel)
+      await channels.close(bufferRightChannel)
+      await protectedClose(pairedStream)
+    }
+  })
+  return outputStream
+
+  // NOTE: this implementation, instead of reacting only over one point,
+  // synchronizes both stream points, making it far less bug prone due reordering
+  // tasks.ignore(tasks.spawn(async () => {
+  //  try {
+  //    while (true) {
+        /*
+        const rightStreamNode = await pull(rightStreamPoint)
+        rightStreamPoint = rightStreamNode.next
+        pairedStream = await push(pairedStream, [ leftValue, rightStreamNode.current ])
+        */
+        // NOTE: synchronizes on both stream points with signals ready
+  //      const [ leftNode, rightNode ] = await Promise.all([
+  //        pull(leftStreamPoint),
+  //        pull(rightStreamPoint)
+  //      ])
+        // NOTE: reassigns the stream points for the next iteration
+  //      leftStreamPoint = leftNode.next
+  //      rightStreamPoint = rightNode.next
+  //      pairedStream = await push(pairedStream, [ leftNode.current, rightNode.current ])
+        // NOTE: a simple yield/suspend codepoint below
+  //      await Promise.resolve()
+  //    }
+  //  } catch (reason) {
+      /*
       await Promise.all([
         protectedClose(leftStreamPoint),
         protectedClose(pairedStream)
       ])
-    }
-  }).catch(function () { }).then(() => {
-    protectedClose(pairedStream)
-  })
+      */
+      // NOTE: only breaks the pair and not both input streams,
+      // if ever any of such input streams break, so stuff is isolated
+  //    await protectedClose(pairedStream)
+  //  }
+  // }))
+  /*
   react(rightStreamPoint, async () => { })
     .catch(function () { })
     .then(() => protectedClose(pairedStream))
-  return outputStream
+  */
+  // return outputStream
 }
 
 /**
