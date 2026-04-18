@@ -32,5 +32,6 @@ const preload = function () {
   return require(`../${LIB_DIR}`)
 }
 
+/** @type {import('../types/sporadic').SporadicModule} */
 module.exports.sporadic = preload()
 module.exports.utils = require('./utils')

@@ -53,13 +53,18 @@ return result});return function push(_x5,_x6){return _ref5.apply(this,arguments)
  * @function
  * @template T
  * @param {SporadicStream<T>} stream
- * @returns {Promise<void>}
+ * @returns {Promise<never>}
  * @description Operation to close a given stream, it never returns and always fails with error
  * @summary Operation to close a given stream, it never returns and always fails with error
  */const close=(()=>{var _ref7=_asyncToGenerator(function*(stream){var _ref8=yield available(stream);const point=_ref8.point;if(point.broken){yield point.next;// always fails
 }else{point.reject(error());point.produced=true;point.broken=true;point.stepper=null;try{if(point.finalizer){point.finalizer()}}catch(reason){// shallow/ignore error/reason
 }yield point.next;// breaks as well
-}});return function close(_x7){return _ref7.apply(this,arguments)}})();const protectedClose=stream=>close(stream).catch(()=>{// shallow/ignore error/reason
+}throw new Error('NEVER REACHED CASE CAUSE PROMISES ABOVE WOULD BREAK')});return function close(_x7){return _ref7.apply(this,arguments)}})();/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @returns
+ */const protectedClose=stream=>close(stream).catch(()=>{// shallow/ignore error/reason
 });/**
  * @function
  * @param {number} interval The interval in milliseconds
@@ -113,4 +118,7 @@ return transformed;// we still return the original / first stream point
  * @param {SporadicStream<T>} leftStream
  * @param {SporadicStream<U>} rightStream
  * @returns {Promise<SporadicStream<T | U>>}
- */const merge=(()=>{var _ref16=_asyncToGenerator(function*(leftStream,rightStream){const mergedStream=yield open();let stepStream=mergedStream;const redirect=(()=>{var _ref17=_asyncToGenerator(function*(signal){stepStream=yield push(stepStream,signal)});return function redirect(_x19){return _ref17.apply(this,arguments)}})();const closedLeft=react(leftStream,redirect);const closedRight=react(rightStream,redirect);Promise.all([closedLeft,closedRight]).then(function(){return protectedClose(stepStream)});return mergedStream});return function merge(_x17,_x18){return _ref16.apply(this,arguments)}})();module.exports.open=open;module.exports.push=push;module.exports.pull=pull;module.exports.close=close;module.exports.react=react;module.exports.filter=filter;module.exports.map=map;module.exports.every=every;module.exports.merge=merge;module.exports.paired=paired;module.exports.reducer=reducer;module.exports.protectedClose=protectedClose;
+ */const merge=(()=>{var _ref16=_asyncToGenerator(function*(leftStream,rightStream){const mergedStream=yield open();let stepStream=mergedStream;/**
+   * @function
+   * @param {T | U} signal
+   */const redirect=(()=>{var _ref17=_asyncToGenerator(function*(signal){stepStream=yield push(stepStream,signal)});return function redirect(_x19){return _ref17.apply(this,arguments)}})();const closedLeft=react(leftStream,redirect);const closedRight=react(rightStream,redirect);Promise.all([closedLeft,closedRight]).then(function(){return protectedClose(stepStream)});return mergedStream});return function merge(_x17,_x18){return _ref16.apply(this,arguments)}})();module.exports.open=open;module.exports.push=push;module.exports.pull=pull;module.exports.close=close;module.exports.react=react;module.exports.filter=filter;module.exports.map=map;module.exports.every=every;module.exports.merge=merge;module.exports.paired=paired;module.exports.reducer=reducer;module.exports.protectedClose=protectedClose;

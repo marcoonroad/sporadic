@@ -4,7 +4,7 @@
 
 'use strict'
 
-const utils = require('../utils')
+const tasks = require('../tasks')
 const channels = require('../channels')
 const streams = require('../streams')
 
@@ -32,12 +32,12 @@ const StreamsMode = {
 const dispose = async coroutine => {
   coroutine.computation = true
 
-  await utils.ignorePromise(channels.close(coroutine.supply))
-  await utils.ignorePromise(channels.close(coroutine.demand))
+  await tasks.ignore(channels.close(coroutine.supply))
+  await tasks.ignore(channels.close(coroutine.demand))
 
   if (coroutine.options.streamsMode !== StreamsMode.DISABLE) {
-    await utils.ignorePromise(streams.close(coroutine.demands))
-    await utils.ignorePromise(streams.close(coroutine.supplies))
+    await tasks.ignore(streams.close(coroutine.demands))
+    await tasks.ignore(streams.close(coroutine.supplies))
   }
 
   return true
@@ -109,7 +109,7 @@ create = async (computation, nullableOptions) => {
   coroutine.demand = await channels.open()
   coroutine.computation = computation
   coroutine.status = State.CREATED
-  coroutine.result = utils.defer()
+  coroutine.result = tasks.defer()
 
   const self = {
     suspend: (value) => suspend(coroutine, value),

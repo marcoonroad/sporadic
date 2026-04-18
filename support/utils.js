@@ -4,6 +4,11 @@
 
 'use strict'
 
+/**
+ * @function
+ * @param {Promise<any>[]} promises
+ * @returns
+ */
 const ignoreAll = (promises) => {
   return promises.map(function (promise) {
     return promise.catch(() => {
@@ -12,17 +17,34 @@ const ignoreAll = (promises) => {
   })
 }
 
-// hack / workaround to drop unhandled promise rejection warning
+/**
+ * @function
+ * @param {Promise<any>[]} promises
+ * @returns
+ */
 const ignorePromises = (promises) => {
+  // hack / workaround to drop unhandled promise rejection warning
   return Promise.all(ignoreAll(promises))
 }
 
+/**
+ * @function
+ * @template T
+ * @param {import("../types/sporadic").GenericStreamPullStep<T>} stream
+ * @returns {Promise<T>}
+ */
 const extractValue = async (stream) => {
   const result = await stream
 
   return result.current
 }
 
+/**
+ * @function
+ * @template T
+ * @param {import("../types/sporadic").GenericStreamPullStep<T>} stream
+ * @returns {Promise<import("../types/sporadic").SporadicStream<T>>}
+ */
 const extractNext = async (stream) => {
   const result = await stream
 
@@ -32,6 +54,12 @@ const extractNext = async (stream) => {
 const seconds = () =>
   Math.floor((new Date()).getTime() / 1000)
 
+/**
+ * @function
+ * @param {number} since
+ * @param {number} until
+ * @returns
+ */
 const random = (since, until) =>
   Math.ceil((Math.random() * (until - since)) + since)
 

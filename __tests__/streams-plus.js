@@ -9,6 +9,7 @@ const sporadic = support.sporadic
 const utils = support.utils
 
 const {
+  paired, reducer, protectedClose,
   every, close, push, open, react, map, pull, filter, merge
 } = sporadic.streams
 
@@ -91,6 +92,11 @@ it('should break reaction loop if one step fails', async () => {
 it('should map/transform stream values', async () => {
   expect.assertions(5)
 
+  /**
+   * @function
+   * @param {number} value
+   * @returns
+   */
   const closure = value => {
     return value * 2
   }
@@ -136,6 +142,10 @@ it('should close the result stream if a map step fails', async () => {
 it('should close result stream if the origin one is closed before', async () => {
   expect.assertions(2)
 
+  /**
+   * @function
+   * @param {number} value
+   */
   const closure = value => value.toString() + value.toString()
 
   const producer = await open()
@@ -150,6 +160,10 @@ it('should close result stream if the origin one is closed before', async () => 
 it('should not map origin values if result stream is closed before', async () => {
   expect.assertions(4)
 
+  /**
+   * @function
+   * @param {number} value
+   */
   const closure = value => value + 1
   const producer = await open()
   const consumer = await map(producer, closure)
@@ -167,6 +181,10 @@ it('should not map origin values if result stream is closed before', async () =>
 })
 
 it('should filter stream values', async () => {
+  /**
+   * @function
+   * @param {number} value
+   */
   const predicate = value => (value % 2) === 0
 
   let producer = await open()
@@ -200,6 +218,11 @@ it('should filter stream values', async () => {
 it('should close filtered stream if the origin one is closed before', async () => {
   expect.assertions(2)
 
+  /**
+   * @function
+   * @param {string} value
+   * @returns
+   */
   const predicate = value => value.length >= 10
   const producer = await open()
   const filtered = await filter(producer, predicate)
@@ -231,6 +254,11 @@ it('should close filtered stream if a filter step fails', async () => {
 it('should ignore sent values from origin if filtered is close', async () => {
   expect.assertions(3)
 
+  /**
+   * @function
+   * @param {{status: string}} value
+   * @returns
+   */
   const predicate = value => value.status === 'PROCESSED'
   const producer = await open()
   const filtered = await filter(producer, predicate)
@@ -277,4 +305,69 @@ it('should merge streams', async () => {
 
   // test signals after every folk is closed
   expect(current).toEqual(expected)
+})
+
+it('should create a proper stream reducer/folder', async () => {
+  let stream = await reducer(1, current => current * 2)
+  let point = await pull(stream)
+  expect(point.current).toBe(1)
+  stream = point.next
+
+  point = await pull(stream)
+  expect(point.current).toBe(2)
+  stream = point.next
+
+  point = await pull(stream)
+  expect(point.current).toBe(4)
+  stream = point.next
+
+  point = await pull(stream)
+  expect(point.current).toBe(8)
+  stream = point.next
+
+  point = await pull(stream)
+  expect(point.current).toBe(16)
+  stream = point.next
+})
+
+it('should create factorial stream', async () => {
+  const orderedMessages = []
+  const sequentialStream = await reducer(0, current => current + 1)
+
+  /** @type {import('../types/sporadic').SporadicStream<number>} */
+  const factorialStream = await open()
+
+  await push(factorialStream, 1)
+  let pairedStream = await paired(sequentialStream, factorialStream)
+  react(pairedStream, async pair => {
+    const sequentialNumber = pair[0]
+    const factorialNumber = pair[1]
+    orderedMessages.push('PAIRED WITH ' + JSON.stringify(pair))
+    await push(factorialStream, factorialNumber * (sequentialNumber + 1))
+  })
+
+  const expectedList = [1, 1, 2, 6, 24, 120]
+  const currentList = []
+
+  try {
+    let factorialNode = await pull(factorialStream)
+    for (let counter = 0; counter <= 5; counter += 1) {
+      orderedMessages.push('COUNTER ' + counter.toString())
+      currentList.push(factorialNode.current)
+      if (counter < 5) {
+        factorialNode = await pull(factorialNode.next)
+      }
+    }
+    await protectedClose(sequentialStream)
+    await protectedClose(factorialStream)
+  } catch (reason) { }
+  expect(currentList).toEqual(expectedList)
+  expect(orderedMessages).toEqual([
+    'COUNTER 0', 'PAIRED WITH [0,1]',
+    'COUNTER 1', 'PAIRED WITH [1,1]',
+    'COUNTER 2', 'PAIRED WITH [2,2]',
+    'COUNTER 3', 'PAIRED WITH [3,6]',
+    'COUNTER 4', 'PAIRED WITH [4,24]',
+    'COUNTER 5', 'PAIRED WITH [5,120]'
+  ])
 })

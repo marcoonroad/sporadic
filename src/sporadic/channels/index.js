@@ -4,7 +4,7 @@
 
 'use strict'
 
-const utils = require('../utils')
+const tasks = require('../tasks')
 
 const closeError = () =>
   Error('Channel is closed!')
@@ -26,23 +26,23 @@ const create = () => {
 
   channel.demands = []
   channel.supplies = []
-  channel.closed = utils.defer()
+  channel.closed = tasks.defer()
   channel.isClosed = false
 
   return channel
 }
 
-const open = () => utils.resolved(create())
+const open = () => Promise.resolve(create())
 
 let send = null
 send = (channel, message, expiration) => {
   if (channel.demands.length === 0) {
     // cannot push on closed channel
     if (channel.isClosed) {
-      return utils.rejected(closeError())
+      return Promise.reject(closeError())
     };
 
-    const received = utils.defer()
+    const received = tasks.defer()
 
     if (
       (expiration !== undefined) &&
@@ -73,7 +73,7 @@ send = (channel, message, expiration) => {
 
     demand.resolve(message)
 
-    return utils.resolved(true)
+    return Promise.resolve(true)
   }
 }
 
@@ -82,10 +82,10 @@ receive = (channel, timeout) => {
   // doesn't break on close if not empty
   if (channel.supplies.length === 0) {
     if (channel.isClosed) {
-      return utils.rejected(closeError())
+      return Promise.reject(closeError())
     }
 
-    const demand = utils.defer()
+    const demand = tasks.defer()
 
     channel.demands.push(demand)
 
@@ -115,13 +115,13 @@ receive = (channel, timeout) => {
 
     supply.received.resolve(true)
 
-    return utils.resolved(supply.message)
+    return Promise.resolve(supply.message)
   }
 }
 
 const close = channel => {
   if (channel.isClosed) {
-    return utils.resolved(false)
+    return Promise.resolve(false)
   }
 
   channel.isClosed = true
@@ -129,7 +129,7 @@ const close = channel => {
   breakDemands(channel)
 
   channel.closed.resolve(true)
-  return utils.resolved(true)
+  return Promise.resolve(true)
 }
 
 const closed = channel =>

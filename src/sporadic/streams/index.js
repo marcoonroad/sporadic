@@ -4,20 +4,43 @@
 
 'use strict'
 
-const utils = require('../utils')
+const tasks = require('../tasks')
 
 const error = () => Error('Stream is closed!')
 
-// needed to perform asynchronous recursion, see function below
-let create = null
+/**
+ * @template T
+ * @typedef {object} SporadicStream<T>
+ * @property {Promise<T>} current
+ * @property {Promise<SporadicStream<T>>} next
+ * @property {(value: T) => void} resolve
+ * @property {(reason: any) => void} reject
+ * @property {boolean} produced
+ * @property {boolean} broken
+ * @property {((value: T) => T) | null} stepper
+ * @property {T | null} pastValue
+ * @property {(() => void) | null} finalizer
+ */
 
-create = (finalizer) => {
-  const { promise, resolve, reject } = utils.defer()
+// needed to perform asynchronous recursion, see function below
+
+/**
+ * @function
+ * @template T
+ * @param {*} finalizer
+ * @param {*} stepper
+ * @param {*} pastValue
+ * @param {*} isFirstNode
+ * @returns {SporadicStream<T>}
+ */
+function createStream (finalizer = null, stepper = null, pastValue = null, isFirstNode = false) {
+  const { promise, resolve, reject } = tasks.defer()
 
   const broken = false
   const produced = false
-  const next = promise.then(() => create(finalizer))
+  const next = promise.then(pastValue => createStream(finalizer, stepper, pastValue, false))
 
+  /** @type {SporadicStream<T>} */
   const stream = {
     current: promise,
     next,
@@ -25,18 +48,64 @@ create = (finalizer) => {
     reject,
     produced,
     broken,
+    stepper,
+    pastValue,
     finalizer
+  }
+
+  if (pastValue !== null && pastValue !== undefined && isFirstNode) {
+    stream.resolve(pastValue)
+    stream.produced = true
   }
 
   return stream
 }
 
-// unit -> stream promise
-const open = (finalizer) => utils.resolved(create(finalizer))
+/**
+ * @function
+ * @template T
+ * @returns {Promise<SporadicStream<T>>}
+ */
+const open = () => Promise.resolve(createStream())
 
-// stream -> (value * stream) promise
-// may throws reason
+/**
+ * @function
+ * @template T
+ * @param {T} initial
+ * @param {(value: T) => T} folding
+ * @returns {Promise<SporadicStream<T>>}
+ * @description Creates an ondemand stream that computes values based on initial value and folding callback
+ * @summary Creates an ondemand stream that computes values based on initial value and folding callback
+ */
+const reducer = async (initial, folding) => {
+  return createStream(null, folding, initial, true)
+}
+
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @returns {Promise<{ current: T, next: SporadicStream<T> }>}
+ */
 const pull = async stream => {
+  if (stream.stepper && !stream.produced && !stream.broken && stream.pastValue !== null && stream.pastValue !== undefined) {
+    try {
+      const stepperWrapper = async () =>
+        stream.stepper && stream.pastValue !== null && stream.pastValue !== undefined ? stream.stepper(stream.pastValue) : null
+      const stepResult = await stepperWrapper()
+      if (stepResult) {
+        stream.resolve(stepResult)
+        stream.produced = true
+        stream.stepper = null
+        stream.pastValue = null
+      }
+    } catch (reason) {
+      stream.reject(reason)
+      stream.broken = true
+      stream.stepper = null
+      stream.pastValue = null
+    }
+  }
   const current = await stream.current
   const next = await stream.next
 
@@ -46,6 +115,12 @@ const pull = async stream => {
   }
 }
 
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @returns {Promise<{ point: SporadicStream<T> }>}
+ */
 const available = async stream => {
   let point = stream
 
@@ -56,7 +131,13 @@ const available = async stream => {
   return { point }
 }
 
-// stream * value -> stream promise
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @param {T} value
+ * @returns {Promise<SporadicStream<T>>}
+ */
 const push = async (stream, value) => {
   const { point } = await available(stream)
 
@@ -68,8 +149,14 @@ const push = async (stream, value) => {
   return result
 }
 
-// stream * reason -> void promise
-// never returns, throws reason
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @returns {Promise<never>}
+ * @description Operation to close a given stream, it never returns and always fails with error
+ * @summary Operation to close a given stream, it never returns and always fails with error
+ */
 const close = async stream => {
   const { point } = await available(stream)
 
@@ -79,6 +166,7 @@ const close = async stream => {
     point.reject(error())
     point.produced = true
     point.broken = true
+    point.stepper = null
 
     try {
       if (point.finalizer) {
@@ -90,16 +178,31 @@ const close = async stream => {
 
     await point.next // breaks as well
   }
+
+  throw new Error('NEVER REACHED CASE CAUSE PROMISES ABOVE WOULD BREAK')
 }
 
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @returns
+ */
 const protectedClose = (stream) =>
   close(stream).catch(() => {
     // shallow/ignore error/reason
   })
 
+/**
+ * @function
+ * @param {number} interval The interval in milliseconds
+ * @returns {Promise<SporadicStream<boolean>>}
+ * @description Fires a stream ticking every given milliseconds (interval), publishing just a true value
+ * @summary Fires a stream ticking every given milliseconds (interval), publishing just a true value
+ */
 const every = (interval) => {
-  let finalizer = null
-  const stream = create(() => finalizer())
+  let finalizer = () => { }
+  const stream = createStream(() => finalizer())
   let currentStream = stream
 
   const intervalId = setInterval(() => {
@@ -112,12 +215,21 @@ const every = (interval) => {
     clearInterval(intervalId)
   }
 
-  return utils.resolved(stream)
+  return Promise.resolve(stream)
 }
 
 // stream * closure -> boolean promise
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream The source stream to react upon
+ * @param {(value: T) => void} procedure A callback to react on stream values
+ * @returns {Promise<boolean>} The promise resolved as true if the source stream is closed
+ * @summary Reacts to every value published to stream, resolving a boolean promise whenever the source stream is closed
+ * @description Reacts to every value published to stream, resolving a boolean promise whenever the source stream is closed
+ */
 const react = async (stream, procedure) => {
-  const deferred = utils.defer()
+  const deferred = tasks.defer()
   let currentStream = stream
 
   try {
@@ -127,7 +239,8 @@ const react = async (stream, procedure) => {
 
       try {
         // forces promise resolution if procedure is async
-        await procedure(result.current)
+        const procedureWrapper = async () => procedure(result.current)
+        await procedureWrapper()
       } catch (reason) {
         deferred.reject(reason)
         throw reason // next catch won't resolve deferred, resolve is ignored
@@ -142,8 +255,15 @@ const react = async (stream, procedure) => {
 }
 
 // stream * closure -> stream promise
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} stream
+ * @param {(value: T) => boolean} predicate
+ * @returns {Promise<SporadicStream<T>>}
+ */
 const filter = async (stream, predicate) => {
-  const filtered = create()
+  const filtered = createStream()
   let newStream = filtered // alias to allow garbage collection here
 
   react(stream, value => {
@@ -166,9 +286,16 @@ const filter = async (stream, predicate) => {
   return filtered // we still return the original / first stream point
 }
 
-// stream * closure -> stream promise
+/**
+ * @function
+ * @template T
+ * @template U
+ * @param {SporadicStream<T>} stream
+ * @param {(value: T) => U} closure
+ * @returns {Promise<SporadicStream<U>>}
+ */
 const map = async (stream, closure) => {
-  const transformed = create()
+  const transformed = createStream()
   let newStream = transformed // alias to allow garbage collection here
 
   react(stream, value => {
@@ -188,10 +315,54 @@ const map = async (stream, closure) => {
   return transformed // we still return the original / first stream point
 }
 
+/**
+ * @function
+ * @template T
+ * @param {SporadicStream<T>} leftStream
+ * @param {SporadicStream<T>} rightStream
+ * @returns {Promise<SporadicStream<T[]>>}
+ */
+const paired = async (leftStream, rightStream) => {
+  const outputStream = await open()
+  let pairedStream = outputStream
+  let leftStreamPoint = leftStream
+  let rightStreamPoint = rightStream
+  react(leftStreamPoint, async leftValue => {
+    try {
+      const rightStreamNode = await pull(rightStreamPoint)
+      rightStreamPoint = rightStreamNode.next
+      pairedStream = await push(pairedStream, [ leftValue, rightStreamNode.current ])
+    } catch (reason) {
+      await Promise.all([
+        protectedClose(leftStreamPoint),
+        protectedClose(pairedStream)
+      ])
+    }
+  }).catch(function () { }).then(() => {
+    protectedClose(pairedStream)
+  })
+  react(rightStreamPoint, async () => { })
+    .catch(function () { })
+    .then(() => protectedClose(pairedStream))
+  return outputStream
+}
+
+/**
+ * @function
+ * @template T
+ * @template U
+ * @param {SporadicStream<T>} leftStream
+ * @param {SporadicStream<U>} rightStream
+ * @returns {Promise<SporadicStream<T | U>>}
+ */
 const merge = async (leftStream, rightStream) => {
   const mergedStream = await open()
   let stepStream = mergedStream
 
+  /**
+   * @function
+   * @param {T | U} signal
+   */
   const redirect = async signal => {
     stepStream = await push(stepStream, signal)
   }
@@ -201,7 +372,7 @@ const merge = async (leftStream, rightStream) => {
 
   Promise.all([ closedLeft, closedRight ])
     .then(() => {
-      return (close(stepStream).catch(function () { }))
+      return (protectedClose(stepStream))
     })
 
   return mergedStream
@@ -216,3 +387,6 @@ module.exports.filter = filter
 module.exports.map = map
 module.exports.every = every
 module.exports.merge = merge
+module.exports.paired = paired
+module.exports.reducer = reducer
+module.exports.protectedClose = protectedClose

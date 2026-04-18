@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "types": ["jest", "node", "jsdom"],
+        "target": "es2022",
+        "module": "nodenext",
+        "lib": ["ES2020", "DOM"],
+        "noEmit": true,
+        "noCheck": false,
+        "allowJs": true,
+        "checkJs": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "forceConsistentCasingInFileNames": true,
+        "moduleResolution": "nodenext"
+    },
+    "include": ["types/sporadic.d.ts", "__tests__/**/*.js", "support/**/*.js"],
+    "exclude": ["node_modules", "TRASH", "dist", "build"]
+}
