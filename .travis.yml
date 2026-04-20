@@ -8,7 +8,7 @@ node_js:
 #  - npm run build
 
 script:
-  - yarn run report
+  - npm run report
 
-cache:
-  yarn: true
+# cache:
+#  yarn: true

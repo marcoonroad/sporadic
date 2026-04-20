@@ -19,8 +19,8 @@ cache:
 
 test_async:
   script:
-  - yarn install
-  - yarn test
+  - npm install
+  - npm run test
 
 # test_db:
 #  script:
