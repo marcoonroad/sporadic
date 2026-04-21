@@ -15,6 +15,6 @@
         "forceConsistentCasingInFileNames": true,
         "moduleResolution": "nodenext"
     },
-    "include": ["types/sporadic.d.ts", "__tests__/**/*.js", "support/**/*.js"],
+    "include": ["types/sporadic.d.ts", "__tests__/**/*.js", "support/**/*.js", "src/sporadic/**/*.js"],
     "exclude": ["node_modules", "TRASH", "dist", "build"]
 }

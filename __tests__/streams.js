@@ -17,7 +17,6 @@ const extractValue = utils.extractValue
 const extractNext = utils.extractNext
 
 it('should open streams', async () => {
-  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(3)
 
   const producerA = await open()
@@ -30,7 +29,6 @@ it('should open streams', async () => {
 })
 
 it('should open & push streams', async () => {
-  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(3)
 
   const producer0 = await open()
@@ -43,7 +41,6 @@ it('should open & push streams', async () => {
 })
 
 it('should open, push & pull streams', async () => {
-  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(18)
 
   const producer0 = await open()
@@ -84,7 +81,6 @@ it('should open, push & pull streams', async () => {
 })
 
 it('should open, push, pull & close streams', async () => {
-  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(6)
 
   const producer0 = await open()
@@ -112,7 +108,6 @@ it('should open, push, pull & close streams', async () => {
 })
 
 it('should replay the pull for the same stream point', async () => {
-  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(8)
 
   const stream = await open()
@@ -133,7 +128,6 @@ it('should replay the pull for the same stream point', async () => {
 })
 
 it('should be able to discard stream points', async () => {
-  jest.setTimeout(30000) // 30s timeout for unit test
   expect.assertions(3)
 
   const stream = await open()
