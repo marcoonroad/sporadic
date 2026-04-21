@@ -1,6 +1,6 @@
 export = sporadic
 
-export interface SporadicStream<T> {
+export interface SporadicInternalStream<T> {
   current: Promise<T>;
   next: Promise<SporadicStream<T>>;
   resolve: (value: T) => void;
@@ -10,6 +10,10 @@ export interface SporadicStream<T> {
   stepper: ((value: T) => T) | null;
   pastValue: T | null;
   finalizer: (() => void) | null;
+}
+
+export interface SporadicStream<T> {
+
 }
 
 export interface SporadicDeferred<T> {
@@ -23,17 +27,30 @@ export type SporadicStreamPullStep<T> = Promise<{
   next: SporadicStream<T>;
 }>
 
-export type GenericStreamPullStep<T> = Promise<SporadicStream<T>> | SporadicStreamPullStep<T> | SporadicStream<T>
+export type GenericStreamPullStep<T> =
+    Promise<SporadicInternalStream<T>>
+  | Promise<SporadicStream<T>>
+  | SporadicStreamPullStep<T>
+  | SporadicStream<T>
+  | SporadicInternalStream<T>;
 
-export interface Coroutine {
+export interface SporadicCoroutine {
+
+}
+
+export interface SporadicCoroutineThis {
   suspend: (value: any) => Promise<any>;
-  status: (coroutine?: Coroutine) => Promise<"RUNNING">;
-  supplies: (coroutine?: Coroutine) => SporadicStream<any>;
-  demands: (coroutine?: Coroutine) => SporadicStream<any>;
+  status: () => Promise<"RUNNING">;
+  supplies: () => SporadicStream<any>;
+  demands: () => SporadicStream<any>;
 }
 
 export interface SporadicChannel<T> {
 
+}
+
+export type SporadicActor<T> = T & {
+  kill: () => void;
 }
 
 export interface SporadicModule {
@@ -56,22 +73,25 @@ export interface SporadicModule {
   };
   channels: {
     open: <T>() => Promise<SporadicChannel<T>>;
-    send: <T>(channel: SporadicChannel<T>, value: T) => Promise;
-    receive: <T>(channel: SporadicChannel<T>) => Promise<T>;
+    send: <T>(channel: SporadicChannel<T>, value: T, timeout?: number) => Promise;
+    receive: <T>(channel: SporadicChannel<T>, timeout?: number) => Promise<T>;
+    sendAfter: <T>(delay: number, channel: SporadicChannel<T>, value: T, timeout?: number) => Promise;
+    receiveAfter: <T>(delay: number, channel: SporadicChannel, timeout?: number) => Promise<T>;
     close: <T>(channel: SporadicChannel<T>) => Promise;
     closed: <T>(channel: SporadicChannel<T>) => Promise<boolean>;
 
   };
   coroutines: {
-    resume: (coroutine: Coroutine, argument?: any) => Promise<any>;
-    status: (coroutine: Coroutine) => Promise<"RUNNING" | "SUSPENDED">;
-    create: (callback: (this: Coroutine, ...arguments: any[]) => any, options?: { streamsMode?: "DISABLE" }) => Coroutine;
-    supplies: (coroutine: Coroutine) => SporadicStream<any>;
-    demands: (coroutine: Coroutine) => SporadicStream<any>;
-    complete: (coroutine: Coroutine) => Promise<any>;
+    resume: (coroutine: SporadicCoroutine, argument?: any) => Promise<any>;
+    status: (coroutine: SporadicCoroutine) => Promise<"RUNNING" | "SUSPENDED" | "DEAD">;
+    create: (callback: (this: SporadicCoroutineThis, ...arguments: any[]) => any, options?: { streamsMode?: "COLLECT" | "DISABLE" }) => SporadicCoroutine;
+    supplies: (coroutine: SporadicCoroutine) => SporadicStream<any>;
+    demands: (coroutine: SporadicCoroutine) => SporadicStream<any>;
+    complete: (coroutine: SporadicCoroutine) => Promise<any>;
 
   };
   actors: {
+    create: <T extends { }>(object: T) => SporadicActor<T>;
 
   };
   tasks: {
@@ -82,6 +102,7 @@ export interface SporadicModule {
     timeout: (seconds: number) => Promise<never>;
     already: () => Promise<void>;
     never: () => Promise<never>;
+
   };
 };
 

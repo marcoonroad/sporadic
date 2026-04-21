@@ -6,6 +6,7 @@
   "browser": "dist/index.js",
   "types": "types/sporadic.d.ts",
   "scripts": {
+    "prebuild": "tsc --project tsconfig.json --noEmit",
     "build:back": "babel src -d build --minified --compact",
     "build": "npm run build:back && npm run build:front",
     "build:front": "rollup -c --environment INCLUDE_DEPS,BUILD:production",
@@ -83,6 +84,7 @@
     "rollup-plugin-commonjs": "^9.2.0",
     "rollup-plugin-node-resolve": "^4.0.0",
     "rollup-plugin-terser": "^4.0.4",
-    "standard": "^12.0.1"
+    "standard": "^12.0.1",
+    "typescript": "^6.0.3"
   }
 }

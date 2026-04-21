@@ -2,9 +2,14 @@
 'use strict';/**
  * @function
  * @template T
+ * @param {T} _value
+ * @returns
+ */function _asyncToGenerator(fn){return function(){var gen=fn.apply(this,arguments);return new Promise(function(resolve,reject){function step(key,arg){try{var info=gen[key](arg);var value=info.value}catch(error){reject(error);return}if(info.done){resolve(value)}else{return Promise.resolve(value).then(function(value){step('next',value)},function(err){step('throw',err)})}}return step('next')})}}const ignoreValue=_value=>{};/**
+ * @function
+ * @template T
  * @param {() => T | void | Promise<T> | Promise<void>} block
  * @returns {Promise<T | void | null>}
- */function _asyncToGenerator(fn){return function(){var gen=fn.apply(this,arguments);return new Promise(function(resolve,reject){function step(key,arg){try{var info=gen[key](arg);var value=info.value}catch(error){reject(error);return}if(info.done){resolve(value)}else{return Promise.resolve(value).then(function(value){step('next',value)},function(err){step('throw',err)})}}return step('next')})}}const spawn=block=>{return new Promise((resolve,reject)=>{setTimeout(_asyncToGenerator(function*(){try{const blockWrapper=(()=>{var _ref2=_asyncToGenerator(function*(){return block()});return function blockWrapper(){return _ref2.apply(this,arguments)}})();const result=yield blockWrapper();/** @type {any} */const dynamicResult=result;const finalResult=yield dynamicResult;resolve(finalResult)}catch(reason){reject(reason)}}),1)})};/**
+ */const spawn=block=>{return new Promise((resolve,reject)=>{setTimeout(_asyncToGenerator(function*(){try{const blockWrapper=(()=>{var _ref2=_asyncToGenerator(function*(){return block()});return function blockWrapper(){return _ref2.apply(this,arguments)}})();const result=yield blockWrapper();/** @type {any} */const dynamicResult=result;const finalResult=yield dynamicResult;resolve(finalResult)}catch(reason){reject(reason)}}),1)})};/**
  * @function
  * @param {number} seconds
  * @returns {Promise<number>}
@@ -18,11 +23,23 @@
  * @property {(value: T) => void} resolve
  * @property {(reason: any) => void} reject
  * @property {Promise<T>} promise
+ * @property {boolean} changed
+ * @property {boolean} broken
  *//**
  * @function
  * @template T
  * @returns {SporadicDeferred<T>}
- */const defer=()=>{const internal={};const result={};result.changed=false;result.broken=false;result.promise=new Promise((resolve,reject)=>{internal.resolve=resolve;internal.reject=reject});result.resolve=value=>{if(result.changed){return}result.changed=true;internal.resolve(value)};result.reject=reason=>{if(result.changed){return}result.changed=true;result.broken=true;internal.reject(reason)};return result};/**
+ */const defer=()=>{const internal={resolve:ignoreValue,reject:ignoreValue};const result={};result.changed=false;result.broken=false;result.promise=new Promise((resolve,reject)=>{internal.resolve=resolve;internal.reject=reject});/**
+   * @function
+   * @template T
+   * @param {T} value
+   * @returns
+   */result.resolve=value=>{if(result.changed){return}result.changed=true;internal.resolve(value)};/**
+   * @function
+   * @template T
+   * @param {T} reason
+   * @returns
+   */result.reject=reason=>{if(result.changed){return}result.changed=true;result.broken=true;internal.reject(reason)};return result};/**
  * @function
  * @template T
  * @param {Promise<T>} promise

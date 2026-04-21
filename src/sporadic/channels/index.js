@@ -12,16 +12,38 @@ const closeError = () =>
 const timeoutError = () =>
   Error('Timeout while listening channel!')
 
+/**
+ * @typedef {Object} SporadicInternalSupply
+ * @property {import('../tasks').SporadicDeferred<any>} received
+ * @property {any} message
+ */
+
+/**
+ * @typedef {Object} SporadicInternalChannel
+ * @property {import('../tasks').SporadicDeferred<any>[]} demands
+ * @property {SporadicInternalSupply[]} supplies
+ * @property {import('../tasks').SporadicDeferred<boolean>} closed
+ * @property {boolean} isClosed
+ */
+
+/**
+ * @function
+ * @param {SporadicInternalChannel} channel
+ * @returns
+ */
 const breakDemands = channel => {
   // breaks all the pending receive calls
   while (channel.demands.length !== 0) {
     const demand = channel.demands.shift()
-
+    if (demand === null || demand === undefined) break;
     demand.reject(closeError()) // no-op if demand defer is changed
   }
 }
 
 const create = () => {
+  /**
+   * @type {SporadicInternalChannel}
+   */
   const channel = {}
 
   channel.demands = []
@@ -34,7 +56,10 @@ const create = () => {
 
 const open = () => Promise.resolve(create())
 
-let send = null
+/**
+ * @type {(channel: SporadicInternalChannel, message: any, expiration?: number) => Promise<any>}
+ */
+let send
 send = (channel, message, expiration) => {
   if (channel.demands.length === 0) {
     // cannot push on closed channel
@@ -63,21 +88,26 @@ send = (channel, message, expiration) => {
     // so this path is never reached after close call
     let demand = channel.demands.shift()
 
-    while (channel.demands.length > 0 && demand.changed) {
+    while (channel.demands.length > 0 && !!demand && demand.changed) {
       demand = channel.demands.shift()
     }
 
-    if (demand.changed) {
+    if (!!demand && demand.changed) {
       return send(channel, message) // recursion me
     }
 
-    demand.resolve(message)
+    if (!!demand) {
+      demand.resolve(message)
+    }
 
     return Promise.resolve(true)
   }
 }
 
-let receive = null
+/**
+ * @type {(channel: SporadicInternalChannel, timeout?: number) => Promise<any>}
+ */
+let receive
 receive = (channel, timeout) => {
   // doesn't break on close if not empty
   if (channel.supplies.length === 0) {
@@ -105,20 +135,30 @@ receive = (channel, timeout) => {
     // closed non-empty streams don't break on receive
     let supply = channel.supplies.shift()
 
-    while (channel.supplies.length > 0 && supply.received.changed) {
+    while (channel.supplies.length > 0 && !!supply && supply.received.changed) {
       supply = channel.supplies.shift()
     }
 
-    if (supply.received.changed) {
+    if (!!supply && supply.received.changed) {
       return receive(channel, timeout) // recursion me
     }
 
-    supply.received.resolve(true)
+    if (supply === null || supply === undefined) {
+      throw new Error('FATAL CRASH ERROR')
+    }
+    else {
+      supply.received.resolve(true)
 
-    return Promise.resolve(supply.message)
+      return Promise.resolve(supply.message)
+    }
   }
 }
 
+/**
+ * @function
+ * @param {SporadicInternalChannel} channel
+ * @returns
+ */
 const close = channel => {
   if (channel.isClosed) {
     return Promise.resolve(false)
@@ -132,9 +172,22 @@ const close = channel => {
   return Promise.resolve(true)
 }
 
+/**
+ * @function
+ * @param {SporadicInternalChannel} channel
+ * @returns
+ */
 const closed = channel =>
   channel.closed.promise
 
+/**
+ * @function
+ * @param {number} delay
+ * @param {SporadicInternalChannel} channel
+ * @param {any} message
+ * @param {number} [expiration]
+ * @returns
+ */
 const sendAfter = (delay, channel, message, expiration) =>
   new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -142,6 +195,13 @@ const sendAfter = (delay, channel, message, expiration) =>
     }, Math.floor(Math.max(0, delay)))
   })
 
+/**
+ * @function
+ * @param {number} delay
+ * @param {SporadicInternalChannel} channel
+ * @param {number} [timeout]
+ * @returns
+ */
 const receiveAfter = (delay, channel, timeout) =>
   new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -149,6 +209,7 @@ const receiveAfter = (delay, channel, timeout) =>
     }, Math.floor(Math.max(0, delay)))
   })
 
+module.exports._create = create
 module.exports.open = open
 module.exports.send = send
 module.exports.receive = receive

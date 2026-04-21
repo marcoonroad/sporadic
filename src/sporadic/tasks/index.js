@@ -80,6 +80,8 @@ const timeout = (seconds) => {
  * @property {(value: T) => void} resolve
  * @property {(reason: any) => void} reject
  * @property {Promise<T>} promise
+ * @property {boolean} changed
+ * @property {boolean} broken
  */
 
 /**

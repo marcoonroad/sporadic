@@ -1,5 +1,5 @@
 /* eslint-env node, es6 */// @ts-check
-'use strict';var _slicedToArray=function(){function sliceIterator(arr,i){var _arr=[];var _n=true;var _d=false;var _e=undefined;try{for(var _i=arr[Symbol.iterator](),_s;!(_n=(_s=_i.next()).done);_n=true){_arr.push(_s.value);if(i&&_arr.length===i)break}}catch(err){_d=true;_e=err}finally{try{if(!_n&&_i['return'])_i['return']()}finally{if(_d)throw _e}}return _arr}return function(arr,i){if(Array.isArray(arr)){return arr}else if(Symbol.iterator in Object(arr)){return sliceIterator(arr,i)}else{throw new TypeError('Invalid attempt to destructure non-iterable instance')}}}();function _asyncToGenerator(fn){return function(){var gen=fn.apply(this,arguments);return new Promise(function(resolve,reject){function step(key,arg){try{var info=gen[key](arg);var value=info.value}catch(error){reject(error);return}if(info.done){resolve(value)}else{return Promise.resolve(value).then(function(value){step('next',value)},function(err){step('throw',err)})}}return step('next')})}}const tasks=require('../tasks');const error=()=>Error('Stream is closed!');/**
+'use strict';var _slicedToArray=function(){function sliceIterator(arr,i){var _arr=[];var _n=true;var _d=false;var _e=undefined;try{for(var _i=arr[Symbol.iterator](),_s;!(_n=(_s=_i.next()).done);_n=true){_arr.push(_s.value);if(i&&_arr.length===i)break}}catch(err){_d=true;_e=err}finally{try{if(!_n&&_i['return'])_i['return']()}finally{if(_d)throw _e}}return _arr}return function(arr,i){if(Array.isArray(arr)){return arr}else if(Symbol.iterator in Object(arr)){return sliceIterator(arr,i)}else{throw new TypeError('Invalid attempt to destructure non-iterable instance')}}}();function _asyncToGenerator(fn){return function(){var gen=fn.apply(this,arguments);return new Promise(function(resolve,reject){function step(key,arg){try{var info=gen[key](arg);var value=info.value}catch(error){reject(error);return}if(info.done){resolve(value)}else{return Promise.resolve(value).then(function(value){step('next',value)},function(err){step('throw',err)})}}return step('next')})}}const tasks=require('../tasks');const channels=require('../channels');const error=()=>Error('Stream is closed!');/**
  * @template T
  * @typedef {object} SporadicStream<T>
  * @property {Promise<T>} current
@@ -38,7 +38,8 @@ const ensureNext = stream => {
  * @param {null | T} pastValue
  * @param {boolean} isFirstNode
  * @returns {SporadicStream<T>}
- */function createStream(finalizer=null,stepper=null,pastValue=null,isFirstNode=false){var _tasks$defer=tasks.defer();const promise=_tasks$defer.promise,resolve=_tasks$defer.resolve,reject=_tasks$defer.reject;stepper=stepper||(value=>value);const broken=false;const produced=false;const next=promise.then(pastValue=>createStream(finalizer,stepper,pastValue,false));// const nextDeferred = tasks.defer()
+ */function createStream(finalizer=null,stepper=null,pastValue=null,isFirstNode=false){var _tasks$defer=tasks.defer();const promise=_tasks$defer.promise,resolve=_tasks$defer.resolve,reject=_tasks$defer.reject;// stepper = stepper || (value => value)
+const broken=false;const produced=false;const next=promise.then(pastValue=>createStream(finalizer,stepper,pastValue,false));// const nextDeferred = tasks.defer()
 /** @type {SporadicStream<T>} */const stream={current:promise,next,// next: nextDeferred.promise,
 // nextPoint: null,
 // resolveNext: null,
@@ -63,7 +64,8 @@ resolve,reject,produced,broken,stepper,pastValue,finalizer};if(pastValue!==null&
  * @template T
  * @param {SporadicStream<T>} stream
  * @returns {Promise<{ current: T, next: SporadicStream<T> }>}
- */const pull=(()=>{var _ref2=_asyncToGenerator(function*(stream){if(stream.stepper&&!stream.produced&&!stream.broken&&stream.pastValue!==null&&stream.pastValue!==undefined){try{const stepperWrapper=(()=>{var _ref3=_asyncToGenerator(function*(){return stream.stepper&&stream.pastValue!==null&&stream.pastValue!==undefined?stream.stepper(stream.pastValue):null});return function stepperWrapper(){return _ref3.apply(this,arguments)}})();const stepResult=yield stepperWrapper();if(stepResult!==null&&stepResult!==undefined){// stream.pastValue = stepResult
+ */const pull=(()=>{var _ref2=_asyncToGenerator(function*(stream){if(stream.stepper&&!stream.produced&&!stream.broken&&stream.pastValue!==null&&stream.pastValue!==undefined){try{const stepperWrapper=(()=>{var _ref3=_asyncToGenerator(function*(){return stream.stepper&&stream.pastValue!==null&&stream.pastValue!==undefined?stream.stepper(stream.pastValue):null});return function stepperWrapper(){return _ref3.apply(this,arguments)}})();const stepResult=yield stepperWrapper();// if (stepResult) {
+if(stepResult!==null&&stepResult!==undefined){// stream.pastValue = stepResult
 stream.resolve(stepResult);stream.produced=true;// ensureNext(stream)
 stream.stepper=null;stream.pastValue=null}}catch(reason){// NOTE: shallow/ignore error/reason
 // stream.current.catch(() => { })
@@ -111,12 +113,14 @@ point.produced=true;point.broken=true;point.stepper=null;try{if(point.finalizer)
  * @returns {Promise<SporadicStream<boolean>>}
  * @description Fires a stream ticking every given milliseconds (interval), publishing just a true value
  * @summary Fires a stream ticking every given milliseconds (interval), publishing just a true value
- */const every=interval=>{let finalizer=()=>{};const stream=createStream(()=>finalizer());let currentStream=stream;const intervalId=setInterval(()=>{if(!currentStream.produced&&!currentStream.broken){tasks.ignore(push(currentStream,true).then(nextStream=>{currentStream=nextStream})// .catch() here is never reached :)
+ */const every=interval=>{let finalizer=()=>{};const stream=createStream(()=>finalizer());let currentStream=stream;const intervalId=setInterval(()=>{// if (!currentStream.produced && !currentStream.broken) {
+tasks.ignore(push(currentStream,true).then(nextStream=>{currentStream=nextStream})// .catch() here is never reached :)
 );// currentStream.pastValue = true
 // currentStream.resolve(true)
 // currentStream.produced = true
 // currentStream = ensureNext(currentStream)
-}},interval);finalizer=()=>{clearInterval(intervalId)};return Promise.resolve(stream)};// stream * closure -> boolean promise
+// }
+},interval);finalizer=()=>{clearInterval(intervalId)};return Promise.resolve(stream)};// stream * closure -> boolean promise
 /**
  * @function
  * @template T
@@ -127,7 +131,8 @@ point.produced=true;point.broken=true;point.stepper=null;try{if(point.finalizer)
  * @description Reacts to every value published to stream, resolving a boolean promise whenever the source stream is closed
  */const react=(()=>{var _ref9=_asyncToGenerator(function*(stream,procedure){const deferred=tasks.defer();let currentStream=stream;try{while(true){const result=yield pull(currentStream);currentStream=result.next;try{// forces promise resolution if procedure is async
 const procedureWrapper=(()=>{var _ref10=_asyncToGenerator(function*(){return procedure(result.current)});return function procedureWrapper(){return _ref10.apply(this,arguments)}})();yield procedureWrapper();// NOTE: a simple yield/suspend codepoint below
-yield Promise.resolve()}catch(reason){deferred.reject(reason);throw reason;// next catch won't resolve deferred, resolve is ignored
+// await Promise.resolve()
+}catch(reason){deferred.reject(reason);throw reason;// next catch won't resolve deferred, resolve is ignored
 }}}catch(reason){deferred.resolve(true)}const isClosed=yield deferred.promise;return isClosed});return function react(_x8,_x9){return _ref9.apply(this,arguments)}})();// stream * closure -> stream promise
 /**
  * @function
@@ -156,34 +161,54 @@ return transformed;// we still return the original / first stream point
  * @param {SporadicStream<T>} leftStream
  * @param {SporadicStream<T>} rightStream
  * @returns {Promise<SporadicStream<T[]>>}
- */const paired=(()=>{var _ref13=_asyncToGenerator(function*(leftStream,rightStream){const outputStream=yield open();let pairedStream=outputStream;let leftStreamPoint=leftStream;let rightStreamPoint=rightStream;// NOTE: this implementation, instead of reacting only over one point,
+ */const paired=(()=>{var _ref13=_asyncToGenerator(function*(leftStream,rightStream){const outputStream=yield open();let pairedStream=outputStream;let leftStreamPoint=leftStream;let rightStreamPoint=rightStream;let bufferLeftChannel=yield channels.open();let bufferRightChannel=yield channels.open();react(leftStreamPoint,(()=>{var _ref14=_asyncToGenerator(function*(leftStreamSignal){yield channels.send(bufferLeftChannel,leftStreamSignal)});return function(_x16){return _ref14.apply(this,arguments)}})());react(rightStreamPoint,(()=>{var _ref15=_asyncToGenerator(function*(rightStreamSignal){yield channels.send(bufferRightChannel,rightStreamSignal)});return function(_x17){return _ref15.apply(this,arguments)}})());tasks.spawn(_asyncToGenerator(function*(){try{while(true){var _ref17=yield Promise.all([channels.receive(bufferLeftChannel),channels.receive(bufferRightChannel)]),_ref18=_slicedToArray(_ref17,2);const leftValue=_ref18[0],rightValue=_ref18[1];// if (leftValue === null || leftValue === undefined) return;
+// if (rightValue === null || rightValue === undefined) return;
+pairedStream=yield push(pairedStream,[leftValue,rightValue])}}catch(reason){// NOTE: we close intermediary channel layers and the final paired stream
+yield channels.close(bufferLeftChannel);yield channels.close(bufferRightChannel);yield protectedClose(pairedStream)}}));return outputStream;// NOTE: this implementation, instead of reacting only over one point,
 // synchronizes both stream points, making it far less bug prone due reordering
-tasks.ignore(tasks.spawn(_asyncToGenerator(function*(){try{while(true){/*
+// tasks.ignore(tasks.spawn(async () => {
+//  try {
+//    while (true) {
+/*
         const rightStreamNode = await pull(rightStreamPoint)
         rightStreamPoint = rightStreamNode.next
         pairedStream = await push(pairedStream, [ leftValue, rightStreamNode.current ])
         */// NOTE: synchronizes on both stream points with signals ready
-var _ref15=yield Promise.all([pull(leftStreamPoint),pull(rightStreamPoint)]),_ref16=_slicedToArray(_ref15,2);const leftNode=_ref16[0],rightNode=_ref16[1];// NOTE: reassigns the stream points for the next iteration
-leftStreamPoint=leftNode.next;rightStreamPoint=rightNode.next;pairedStream=yield push(pairedStream,[leftNode.current,rightNode.current]);// NOTE: a simple yield/suspend codepoint below
-yield Promise.resolve()}}catch(reason){/*
+//      const [ leftNode, rightNode ] = await Promise.all([
+//        pull(leftStreamPoint),
+//        pull(rightStreamPoint)
+//      ])
+// NOTE: reassigns the stream points for the next iteration
+//      leftStreamPoint = leftNode.next
+//      rightStreamPoint = rightNode.next
+//      pairedStream = await push(pairedStream, [ leftNode.current, rightNode.current ])
+// NOTE: a simple yield/suspend codepoint below
+//      await Promise.resolve()
+//    }
+//  } catch (reason) {
+/*
       await Promise.all([
         protectedClose(leftStreamPoint),
         protectedClose(pairedStream)
       ])
       */// NOTE: only breaks the pair and not both input streams,
 // if ever any of such input streams break, so stuff is isolated
-yield protectedClose(pairedStream)}})));/*
+//    await protectedClose(pairedStream)
+//  }
+// }))
+/*
   react(rightStreamPoint, async () => { })
     .catch(function () { })
     .then(() => protectedClose(pairedStream))
-  */return outputStream});return function paired(_x14,_x15){return _ref13.apply(this,arguments)}})();/**
+  */// return outputStream
+});return function paired(_x14,_x15){return _ref13.apply(this,arguments)}})();/**
  * @function
  * @template T
  * @template U
  * @param {SporadicStream<T>} leftStream
  * @param {SporadicStream<U>} rightStream
  * @returns {Promise<SporadicStream<T | U>>}
- */const merge=(()=>{var _ref17=_asyncToGenerator(function*(leftStream,rightStream){const mergedStream=yield open();let stepStream=mergedStream;/**
+ */const merge=(()=>{var _ref19=_asyncToGenerator(function*(leftStream,rightStream){const mergedStream=yield open();let stepStream=mergedStream;/**
    * @function
    * @param {T | U} signal
-   */const redirect=(()=>{var _ref18=_asyncToGenerator(function*(signal){stepStream=yield push(stepStream,signal)});return function redirect(_x18){return _ref18.apply(this,arguments)}})();const closedLeft=react(leftStream,redirect);const closedRight=react(rightStream,redirect);Promise.all([closedLeft,closedRight]).then(function(){return protectedClose(stepStream)});return mergedStream});return function merge(_x16,_x17){return _ref17.apply(this,arguments)}})();module.exports.open=open;module.exports.push=push;module.exports.pull=pull;module.exports.close=close;module.exports.react=react;module.exports.filter=filter;module.exports.map=map;module.exports.every=every;module.exports.merge=merge;module.exports.paired=paired;module.exports.reducer=reducer;module.exports.protectedClose=protectedClose;
+   */const redirect=(()=>{var _ref20=_asyncToGenerator(function*(signal){stepStream=yield push(stepStream,signal)});return function redirect(_x20){return _ref20.apply(this,arguments)}})();const closedLeft=react(leftStream,redirect);const closedRight=react(rightStream,redirect);Promise.all([closedLeft,closedRight]).then(function(){return protectedClose(stepStream)});return mergedStream});return function merge(_x18,_x19){return _ref19.apply(this,arguments)}})();module.exports.open=open;module.exports.push=push;module.exports.pull=pull;module.exports.close=close;module.exports.react=react;module.exports.filter=filter;module.exports.map=map;module.exports.every=every;module.exports.merge=merge;module.exports.paired=paired;module.exports.reducer=reducer;module.exports.protectedClose=protectedClose;

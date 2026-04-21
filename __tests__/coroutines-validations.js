@@ -11,7 +11,7 @@ const { coroutines } = sporadic
 it('should fail resume if coroutine is invalid', async () => {
   expect.assertions(1)
 
-  /** @type {import('../types/sporadic').Coroutine} */
+  /** @type {import('../types/sporadic').SporadicCoroutine} */
   // @ts-ignore
   const invalidCoroutine = {}
   const supply = coroutines.resume(invalidCoroutine, 12)
@@ -24,7 +24,7 @@ it('should fail resume if coroutine is invalid', async () => {
 it('should fail on any coroutine operation if coroutine is invalid', async () => {
   expect.assertions(3)
 
-  /** @type {import('../types/sporadic').Coroutine} */
+  /** @type {import('../types/sporadic').SporadicCoroutine} */
   // @ts-ignore
   const invalidCoroutine = {}
 

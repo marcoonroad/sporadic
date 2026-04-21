@@ -36,6 +36,7 @@ const ignorePromises = (promises) => {
 const extractValue = async (stream) => {
   const result = await stream
 
+  // @ts-ignore
   return result.current
 }
 
@@ -48,6 +49,7 @@ const extractValue = async (stream) => {
 const extractNext = async (stream) => {
   const result = await stream
 
+  // @ts-ignore
   return result.next
 }
 

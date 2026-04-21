@@ -23,13 +23,13 @@ it('should be able to create a coroutine', async () => {
 it('should be able to resume & suspend a coroutine', async () => {
   expect.assertions(10)
 
-  /** @type {import('../types/sporadic').Coroutine} */
+  /** @type {import('../types/sporadic').SporadicCoroutine} */
   // @ts-ignore
   let coroutine = null
   coroutine = await create(async function (number) {
     expect(number).toBe(12)
 
-    expect(this.status(coroutine)).toBe('RUNNING')
+    expect(this.status()).toBe('RUNNING')
 
     await expect(resume(coroutine, 'NO NO')).rejects.toMatchObject({
       message: 'Coroutine is already running!'

@@ -8,12 +8,18 @@ const tasks = require('../tasks')
 
 /**
  * @function
- * @param {Object} object
+ * @param {{[key: string]: any}} object
  * @returns {Object}
  */
 const create = object => {
   const handler = {}
   let revoke = () => { }
+  /**
+   * @function
+   * @param {Object} _target
+   * @param {string} property
+   * @returns
+   */
   handler.deleteObject = (_target, property) => {
     if (property === 'kill') {
       throw new Error('Cannot delete reserved keyword/property called [kill]')
@@ -21,6 +27,13 @@ const create = object => {
     delete object[ property ]
     return true
   }
+  /**
+   * @function
+   * @param {Object} _target
+   * @param {string} property
+   * @param {any} value
+   * @returns
+   */
   handler.set = (_target, property, value) => {
     if (property === 'kill') {
       throw new Error('Cannot override reserved keyword/property called [kill]')
@@ -28,24 +41,48 @@ const create = object => {
     object[ property ] = value
     return true
   }
+  /**
+   * @function
+   * @param {Object} _target
+   * @param {string} property
+   * @param {Object} receiver
+   * @returns
+   */
   handler.get = (_target, property, receiver) => {
     if (property === 'kill') {
-      return (...values) => {
+      /**
+       * @function
+       * @param {...any} _values
+       * @returns
+       */
+      return (..._values) => {
         revoke()
       }
     }
     const value = object[property]
     if (value instanceof Function) {
-      return function (...values) {
+      /**
+       * @function
+       * @this {Object}
+       * @param {...any} _values
+       * @returns
+       */
+      return function (..._values) {
         const thisObject = this
-        return tasks.spawn(async () => value.apply(thisObject === receiver ? object : thisObject, values))
+        return tasks.spawn(async () => value.apply(thisObject === receiver ? object : thisObject, _values))
       }
     } else if (property !== 'fallback' && (value === null || value === undefined)) {
       const fallback = object.fallback
       if (fallback instanceof Function) {
-        return function (...values) {
+        /**
+         * @function
+         * @this {Object}
+         * @param {...any} _values
+         * @returns
+         */
+        return function (..._values) {
           const thisObject = this
-          return fallback.apply(thisObject === receiver ? object : thisObject, [ property, ...values ])
+          return fallback.apply(thisObject === receiver ? object : thisObject, [ property, ..._values ])
         }
       } else {
         return value

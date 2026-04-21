@@ -15,6 +15,9 @@ const State = {
   DEAD: 4
 }
 
+/**
+ * @type {['<undefined>' , "CREATED" , "RUNNING" , "SUSPENDED" , "DEAD"]}
+ */
 const PrintState = [
   '<undefined>',
   'CREATED',
@@ -23,12 +26,34 @@ const PrintState = [
   'DEAD'
 ]
 
+/**
+ * @type {{PERSIST: 1, COLLECT: 2, DISABLE: 3}}
+ */
+
 const StreamsMode = {
   PERSIST: 1,
   COLLECT: 2,
   DISABLE: 3
 }
 
+/**
+ * @typedef {Object} InternalSporadicCoroutine
+ * @property {boolean | ((..._values: any[]) => Promise<any>)} computation
+ * @property {Object} options
+ * @property {1 | 2 | 3 | "PERSIST" | "COLLECT" | "DISABLE"} options.streamsMode
+ * @property {import('../channels').SporadicInternalChannel} supply
+ * @property {import('../channels').SporadicInternalChannel} demand
+ * @property {import('../streams').SporadicStream<any>} demands
+ * @property {import('../streams').SporadicStream<any>} supplies
+ * @property {import('../tasks').SporadicDeferred<any>} result
+ * @property {any} status
+ */
+
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ * @returns
+ */
 const dispose = async coroutine => {
   coroutine.computation = true
 
@@ -43,6 +68,11 @@ const dispose = async coroutine => {
   return true
 }
 
+/**
+ * @function
+ * @param {Object} options
+ * @param {string | number} options.streamsMode
+ */
 const validateOptions = options => {
   if (
     !options ||
@@ -56,6 +86,10 @@ const validateOptions = options => {
   }
 }
 
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ */
 const validate = coroutine => {
   const withoutStreams =
     coroutine.options &&
@@ -82,22 +116,51 @@ const validate = coroutine => {
   }
 }
 
-let create = null
-let suspend = null
-let resume = null
-let status = null
-let demands = null
-let supplies = null
-let complete = null
+/**
+ * @type {(computation: any, options?: { streamsMode: 1 | 2 | 3 | 'PERSIST' | 'COLLECT' | 'DISABLE'}) => Promise<InternalSporadicCoroutine>}
+ */
+let create
+
+/**
+ * @type {(coroutine: InternalSporadicCoroutine, value: any) => Promise<any>}
+ */
+let suspend
+
+/**
+ * @type {(coroutine: InternalSporadicCoroutine, value: any) => Promise<any>}
+ */
+let resume
+
+/**
+ * @type {(coroutine: InternalSporadicCoroutine) => "<undefined>" | "CREATED" | "RUNNING" | "SUSPENDED" | "DEAD"}
+ */
+let status
+
+/**
+ * @type {(coroutine: InternalSporadicCoroutine) => import('../streams').SporadicStream<any>}
+ */
+let demands
+
+/**
+ * @type {(coroutine: InternalSporadicCoroutine) => import('../streams').SporadicStream<any>}
+ */
+let supplies
+
+/**
+ * @type {(coroutine: InternalSporadicCoroutine) => Promise<any>}
+ */
+let complete
 
 create = async (computation, nullableOptions) => {
   const coroutine = {}
 
-  const options = nullableOptions || {}
+  const options = nullableOptions || {streamsMode: 'PERSIST'}
+  options.streamsMode = options.streamsMode || 'PERSIST'
   validateOptions(options)
 
   options.streamsMode = options.streamsMode || 'PERSIST'
-  options.streamsMode = StreamsMode[options.streamsMode]
+  options.streamsMode = typeof options.streamsMode === 'string' ?
+    StreamsMode[options.streamsMode] : options.streamsMode
 
   if (options.streamsMode !== StreamsMode.DISABLE) {
     coroutine.supplies = await streams.open()
@@ -112,6 +175,11 @@ create = async (computation, nullableOptions) => {
   coroutine.result = tasks.defer()
 
   const self = {
+    /**
+     * @function
+     * @param {any} value
+     * @returns
+     */
     suspend: (value) => suspend(coroutine, value),
     status: () => status(coroutine),
     supplies: () => supplies(coroutine),
@@ -123,6 +191,11 @@ create = async (computation, nullableOptions) => {
   return coroutine
 }
 
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ * @param {any} value
+ */
 resume = async (coroutine, value) => {
   validate(coroutine)
 
@@ -142,6 +215,9 @@ resume = async (coroutine, value) => {
 
   if (coroutine.status === State.CREATED) {
     coroutine.status = State.RUNNING
+    if (coroutine.computation === true || coroutine.computation === false) {
+      throw new Error('FATAL CRASH ERROR')
+    }
     coroutine.computation(value).then(async result => {
       if (coroutine.options.streamsMode !== StreamsMode.DISABLE) {
         const nextStream = await streams.push(coroutine.supplies, result)
@@ -211,11 +287,20 @@ suspend = async (coroutine, value) => {
   return input
 }
 
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ * @returns {"<undefined>" | "RUNNING" | "CREATED" | "SUSPENDED" | "DEAD"}
+ */
 status = coroutine => {
   validate(coroutine)
   return PrintState[coroutine.status]
 }
 
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ */
 demands = coroutine => {
   validate(coroutine)
 
@@ -226,6 +311,10 @@ demands = coroutine => {
   return coroutine.demands
 }
 
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ */
 supplies = coroutine => {
   validate(coroutine)
 
@@ -236,6 +325,10 @@ supplies = coroutine => {
   return coroutine.supplies
 }
 
+/**
+ * @function
+ * @param {InternalSporadicCoroutine} coroutine
+ */
 complete = coroutine => {
   validate(coroutine)
   return coroutine.result.promise

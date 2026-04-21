@@ -10,6 +10,13 @@ const sporadic = support.sporadic
 it('should create actors', async () => {
   const actor = sporadic.actors.create({
     counter: 1,
+
+    /**
+     * @function
+     * @param {string} property
+     * @param  {...any} values
+     * @returns
+     */
     fallback: async function (property, ...values) {
       const thisObject = this
       const result = await sporadic.tasks.spawn(() => {
@@ -22,6 +29,12 @@ it('should create actors', async () => {
       })
       return result
     },
+
+    /**
+     * @function
+     * @param {number} amount
+     * @returns
+     */
     increase: async function (amount) {
       const thisObject = this
       const result = await sporadic.tasks.spawn(() => {
@@ -36,7 +49,11 @@ it('should create actors', async () => {
 
   const promise1 = actor.increase(2)
   const promise2 = actor.increase(3)
+
+  // @ts-ignore
   const promise3 = actor.multiply(2)
+
+  // @ts-ignore
   const promise4 = actor.decrease(4)
 
   const check1 = expect(promise1).resolves.toBe(true)
@@ -48,6 +65,13 @@ it('should create actors', async () => {
 
   expect(actor.counter).toBe(2)
 
+  /**
+   * @function
+   * @this {*}
+   * @param {number} amount
+   * @returns
+   */
+  // @ts-ignore
   actor.multiply = async function (amount) {
     const thisObject = this
     const result = await sporadic.tasks.spawn(async () => {
@@ -57,6 +81,7 @@ it('should create actors', async () => {
     return result
   }
 
+  // @ts-ignore
   const promise5 = actor.multiply(5)
   const check5 = expect(promise5).resolves.toBe(true)
   await check5

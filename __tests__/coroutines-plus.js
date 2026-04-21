@@ -11,7 +11,10 @@ const { coroutines, streams } = sporadic
 it('should listen for coroutine supplies & demands', async () => {
   expect.assertions(11)
 
-  let coroutine = null
+  /**
+   * @type {import('../types/sporadic').SporadicCoroutine}
+   */
+  let coroutine
   coroutine = await coroutines.create(async function (number) {
     expect(this.supplies()).toBe(coroutines.supplies(coroutine))
     expect(this.demands()).toBe(coroutines.demands(coroutine))
@@ -31,7 +34,15 @@ it('should listen for coroutine supplies & demands', async () => {
 
   const expectedSupplies = [2, 4, 6, 8, 10, 17]
   const expectedDemands = [2, 7, 3, 6, 2, -1]
+
+  /**
+   * @type {any[]}
+   */
   const currentSupplies = []
+
+  /**
+   * @type {any[]}
+   */
   const currentDemands = []
 
   streams.react(supplies, currentSupplies.push.bind(currentSupplies))
@@ -121,11 +132,30 @@ it('should move stream points on options.streamsMode=COLLECT', async () => {
 it('should mix many coroutine behaviors', async () => {
   expect.assertions(14)
 
-  let coroutine1 = null
-  let coroutine2 = null
-  let coroutine3 = null
-  let coroutine4 = null
-  let coroutine5 = null
+  /**
+   * @type {import('../types/sporadic').SporadicCoroutine}
+   */
+  let coroutine1
+
+  /**
+   * @type {import('../types/sporadic').SporadicCoroutine}
+   */
+  let coroutine2
+
+  /**
+   * @type {import('../types/sporadic').SporadicCoroutine}
+   */
+  let coroutine3
+
+  /**
+   * @type {import('../types/sporadic').SporadicCoroutine}
+   */
+  let coroutine4
+
+  /**
+   * @type {import('../types/sporadic').SporadicCoroutine}
+   */
+  let coroutine5
 
   coroutine1 = await coroutines.create(async function () {
     const result = await coroutines.complete(coroutine3)
