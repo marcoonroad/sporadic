@@ -1,5 +1,7 @@
 /* eslint-env node, es6, jest */
 
+// @ts-check
+
 'use strict'
 
 const { sporadic } = require('../support')
@@ -9,6 +11,8 @@ const { coroutines } = sporadic
 it('should fail resume if coroutine is invalid', async () => {
   expect.assertions(1)
 
+  /** @type {import('../types/sporadic').SporadicCoroutine} */
+  // @ts-ignore
   const invalidCoroutine = {}
   const supply = coroutines.resume(invalidCoroutine, 12)
 
@@ -20,6 +24,8 @@ it('should fail resume if coroutine is invalid', async () => {
 it('should fail on any coroutine operation if coroutine is invalid', async () => {
   expect.assertions(3)
 
+  /** @type {import('../types/sporadic').SporadicCoroutine} */
+  // @ts-ignore
   const invalidCoroutine = {}
 
   try {
@@ -50,7 +56,12 @@ it('should fail on any coroutine operation if coroutine is invalid', async () =>
 it('should fail suspend if coroutine is not active', async () => {
   expect.assertions(1)
 
-  let suspend = null
+  /**
+   * @function
+   * @param {any} value
+   * @returns {Promise<any>}
+   */
+  let suspend = value => new Promise((resolve, reject) => { })
   const coroutine = await coroutines.create(async function () {
     suspend = this.suspend
 
@@ -61,9 +72,11 @@ it('should fail suspend if coroutine is not active', async () => {
 
   await coroutines.resume(coroutine)
 
-  await expect(suspend(12)).rejects.toMatchObject({
-    message: 'Expected an active coroutine to yield from!'
-  })
+  if (suspend instanceof Function) {
+    await expect(suspend(12)).rejects.toMatchObject({
+      message: 'Expected an active coroutine to yield from!'
+    })
+  }
 })
 
 it('should fail on coroutines without supplies/demands streams', async () => {
@@ -134,6 +147,8 @@ it('should fail on invalid coroutine configuration', async () => {
 
   const result = coroutines.create(async function () {
     return 'HEY'
+
+    // @ts-ignore
   }, { streamsMode: 'INVALID-MODE' })
 
   await expect(result).rejects.toMatchObject({

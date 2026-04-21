@@ -1,5 +1,7 @@
 /* eslint-env node, es6, jest */
 
+// @ts-check
+
 'use strict'
 
 const preload = function () {
@@ -30,5 +32,6 @@ const preload = function () {
   return require(`../${LIB_DIR}`)
 }
 
+/** @type {import('../types/sporadic').SporadicModule} */
 module.exports.sporadic = preload()
 module.exports.utils = require('./utils')

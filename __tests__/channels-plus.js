@@ -1,5 +1,7 @@
 /* eslint-env node, es6, jest */
 
+// @ts-check
+
 'use strict'
 
 const sporadic = require('../support').sporadic

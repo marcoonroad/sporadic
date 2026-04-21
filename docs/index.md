@@ -86,10 +86,19 @@ Currently, the following abstractions are implemented:
   coroutine result (but keep in mind that coroutines can "loop" forever). It's kinda
   like the JavaScript generators, with the sole difference of being asynchronous
   instead synchronous calls (and thus, allowing us to mix asynchronous I/O with that).
+- [sporadic.actors][4], an abstraction for asynchronous message-passing. Actors are a
+  mean to invoke objects' methods in a non-blocking way, whether if the defined methods
+  are synchronous or asynchronous, the method call is scheduled to run in background (and
+  the receiver 'this' object would still be bound properly).
+- [sporadic.tasks][5], bare minimum abstractions extending the built-in promises of
+  JavaScript, but in a different explicit namespace to avoid collisions and bogus
+  behaviors originated by a possible monkey-patch.
 
   [1]: https://marcoonroad.github.io/sporadic/streams
   [2]: https://marcoonroad.github.io/sporadic/channels
   [3]: https://marcoonroad.github.io/sporadic/coroutines
+  [4]: https://marcoonroad.github.io/sporadic/actors
+  [5]: https://marcoonroad.github.io/sporadic/tasks
 
 ## Remarks
 
